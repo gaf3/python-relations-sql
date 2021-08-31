@@ -11,4 +11,4 @@ RUN pip install -r requirements.txt
 COPY setup.py .
 COPY lib lib
 
-ENV PYTHONPATH "/opt/service/lib:/opt/service/test:${PYTHONPATH}"
+ENV PYTHONPATH "/opt/service/lib:/opt/service/test/test_relations_sql:${PYTHONPATH}"

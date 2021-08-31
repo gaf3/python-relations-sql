@@ -7,7 +7,12 @@ setup(
     package_dir = {'': 'lib'},
     py_modules = [
         'relations_sql',
-        'relations_sql.query'
+        'relations_sql.sql',
+        'relations_sql.expression',
+        'relations_sql.criterion',
+        'relations_sql.criteria',
+        'relations_sql.clause',
+        'relations_sql.statement'
     ],
     install_requires=[]
 )

@@ -32,7 +32,12 @@ lint:
 setup:
 	docker run $(TTY) $(VOLUMES) $(INSTALL) sh -c "cp -r /opt/service /opt/install && cd /opt/install/ && \
 	python setup.py install && \
-	python -m relations_sql.query"
+	python -m relations_sql.sql && \
+	python -m relations_sql.expression && \
+	python -m relations_sql.criterion && \
+	python -m relations_sql.criteria && \
+	python -m relations_sql.clause && \
+	python -m relations_sql.statement"
 
 tag:
 	-git tag -a $(VERSION) -m "Version $(VERSION)"
