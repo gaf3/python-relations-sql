@@ -1,7 +1,7 @@
 ACCOUNT=gaf3
 IMAGE=relations-sql
 INSTALL=python:3.8.5-alpine3.12
-VERSION?=0.1.0
+VERSION?=0.2.0
 DEBUG_PORT=5678
 TTY=$(shell if tty -s; then echo "-it"; fi)
 VOLUMES=-v ${PWD}/lib:/opt/service/lib \
@@ -37,7 +37,7 @@ setup:
 	python -m relations_sql.criterion && \
 	python -m relations_sql.criteria && \
 	python -m relations_sql.clause && \
-	python -m relations_sql.statement"
+	python -m relations_sql.query"
 
 tag:
 	-git tag -a $(VERSION) -m "Version $(VERSION)"

@@ -10,38 +10,38 @@ import collections
 import relations_sql
 
 
-class STATEMENT(relations_sql.STATEMENT):
+class QUERY(relations_sql.QUERY):
 
-    NAME = "STATEMENT"
+    NAME = "QUERY"
 
     CLAUSES = collections.OrderedDict([
         ("SELECT", test_clause.FIELDS),
         ("FROM", test_clause.FROM)
     ])
 
-class TestSTATEMENT(unittest.TestCase):
+class TestQUERY(unittest.TestCase):
 
     maxDiff = None
 
     def test___init__(self):
 
-        statement = STATEMENT()
+        statement = QUERY()
 
         self.assertEqual(statement.SELECT.expressions, [])
         self.assertEqual(statement.FROM.expressions, [])
 
-        statement = STATEMENT(SELECT="people.stuff", FROM=test_clause.FROM("things"))
+        statement = QUERY(SELECT="people.stuff", FROM=test_clause.FROM("things"))
 
         self.assertEqual(statement.SELECT.expressions[0].table.name, "people")
         self.assertEqual(statement.SELECT.expressions[0].name, "stuff")
         self.assertEqual(statement.FROM.expressions[0].name, "things")
 
-        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for STATEMENT", STATEMENT, nope=False)
+        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for QUERY", QUERY, nope=False)
 
     def test___getattr__(self):
 
         model = unittest.mock.MagicMock()
-        statement = STATEMENT(SELECT="people.stuff", FROM="things").bind(model)
+        statement = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
         statement.retrieve(False)
 
@@ -55,32 +55,32 @@ class TestSTATEMENT(unittest.TestCase):
 
     def test___len__(self):
 
-        statement = STATEMENT(SELECT="people.stuff", FROM="things")
+        statement = QUERY(SELECT="people.stuff", FROM="things")
 
         self.assertEqual(len(statement), 2)
 
     def test_check(self):
 
-        statement = STATEMENT(SELECT="people.stuff", FROM="things")
+        statement = QUERY(SELECT="people.stuff", FROM="things")
 
         statement.check({})
         self.assertEqual(statement.clauses, {})
 
-        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for STATEMENT", STATEMENT, nope=False)
+        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for QUERY", QUERY, nope=False)
 
     def test_bind(self):
 
         model = unittest.mock.MagicMock()
-        statement = STATEMENT(SELECT="people.stuff", FROM="things").bind(model)
+        statement = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
         self.assertEqual(statement.model, model)
 
     def test_generate(self):
 
-        statement = STATEMENT(SELECT="people.stuff", FROM="things")
+        statement = QUERY(SELECT="people.stuff", FROM="things")
 
         statement.generate()
-        self.assertEqual(statement.sql, "STATEMENT `people`.`stuff` FROM `things`")
+        self.assertEqual(statement.sql, "QUERY `people`.`stuff` FROM `things`")
         self.assertEqual(statement.args, [])
 
 
