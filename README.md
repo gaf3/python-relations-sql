@@ -2,9 +2,9 @@
 
 Module for interacting with Relations and SQL
 
-This is an abstract library that'll be used to create libraries for pymysql, psycopg2, sqlite3, etc.
+This is an abstract library that'll be used to inject into the source libraries for pymysql, psycopg2, sqlite3, etc.
 
-But here's some of the main unittests so you get the general idea.
+But folks may find it useful for their usages. So here's some of the main unittests so you get the general idea.
 
 # import
 
@@ -113,3 +113,77 @@ query.LIMIT(10)
 
 self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", query.generate)
 ```
+
+# inherit
+
+The unittest demonstrate how to abstract through inheritance. Classes know which other classes they'll need through class attributes.
+
+The unittests are where the backticks escaping comes from. It's not a default or anything.
+
+In `test_clause.py`
+
+```python
+class OPTIONS(relations_sql.OPTIONS):
+
+    pass
+
+
+class FIELDS(relations_sql.FIELDS):
+
+    ARGS = test_expression.FIELD
+    KWARG = test_expression.FIELD
+    KWARGS = test_expression.AS
+```
+
+In `test_query.py`
+
+```python
+class SELECT(relations_sql.SELECT):
+
+    CLAUSES = collections.OrderedDict([
+        ("OPTIONS", test_clause.OPTIONS),
+        ("FIELDS", test_clause.FIELDS),
+        ("FROM", test_clause.FROM),
+        ("WHERE", test_clause.WHERE),
+        ("GROUP_BY", test_clause.GROUP_BY),
+        ("HAVING", test_clause.HAVING),
+        ("ORDER_BY", test_clause.ORDER_BY),
+        ("LIMIT", test_clause.LIMIT)
+    ])
+
+
+class INSERT(relations_sql.INSERT):
+
+    CLAUSES = collections.OrderedDict([
+        ("OPTIONS", test_clause.OPTIONS),
+        ("TABLE", test_expression.TABLE),
+        ("FIELDS", test_expression.NAMES),
+        ("VALUES", test_clause.VALUES),
+        ("SELECT", SELECT)
+    ])
+
+
+class UPDATE(relations_sql.UPDATE):
+
+    CLAUSES = collections.OrderedDict([
+        ("OPTIONS", test_clause.OPTIONS),
+        ("TABLE", test_expression.TABLE),
+        ("SET", test_clause.SET),
+        ("WHERE", test_clause.WHERE),
+        ("ORDER_BY", test_clause.ORDER_BY),
+        ("LIMIT", test_clause.LIMIT)
+    ])
+
+
+class DELETE(relations_sql.DELETE):
+
+    CLAUSES = collections.OrderedDict([
+        ("OPTIONS", test_clause.OPTIONS),
+        ("TABLE", test_expression.TABLE),
+        ("WHERE", test_clause.WHERE),
+        ("ORDER_BY", test_clause.ORDER_BY),
+        ("LIMIT", test_clause.LIMIT)
+    ])
+```
+
+In the case of query classes, the OrderedDict's there also specific the order in which clauses are generated and appended. So it's pretty easy to extend.

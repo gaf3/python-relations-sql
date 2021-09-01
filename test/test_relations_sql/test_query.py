@@ -271,8 +271,6 @@ class TestLIMITED(unittest.TestCase):
 
 class UPDATE(relations_sql.UPDATE):
 
-    NAME = "UPDATE"
-
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
         ("TABLE", test_expression.TABLE),
@@ -301,8 +299,6 @@ class TestUPDATE(unittest.TestCase):
 
 
 class DELETE(relations_sql.DELETE):
-
-    NAME = "DELETE"
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
