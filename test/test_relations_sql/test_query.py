@@ -25,63 +25,63 @@ class TestQUERY(unittest.TestCase):
 
     def test___init__(self):
 
-        statement = QUERY()
+        query = QUERY()
 
-        self.assertEqual(statement.SELECT.expressions, [])
-        self.assertEqual(statement.FROM.expressions, [])
+        self.assertEqual(query.SELECT.expressions, [])
+        self.assertEqual(query.FROM.expressions, [])
 
-        statement = QUERY(SELECT="people.stuff", FROM=test_clause.FROM("things"))
+        query = QUERY(SELECT="people.stuff", FROM=test_clause.FROM("things"))
 
-        self.assertEqual(statement.SELECT.expressions[0].table.name, "people")
-        self.assertEqual(statement.SELECT.expressions[0].name, "stuff")
-        self.assertEqual(statement.FROM.expressions[0].name, "things")
+        self.assertEqual(query.SELECT.expressions[0].table.name, "people")
+        self.assertEqual(query.SELECT.expressions[0].name, "stuff")
+        self.assertEqual(query.FROM.expressions[0].name, "things")
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for QUERY", QUERY, nope=False)
 
     def test___getattr__(self):
 
         model = unittest.mock.MagicMock()
-        statement = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+        query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
-        statement.retrieve(False)
+        query.retrieve(False)
 
         model.retrieve.assert_called_once_with(False)
 
         def nope():
 
-            statement.nope
+            query.nope
 
         self.assertRaisesRegex(AttributeError, "object has no attribute", nope)
 
     def test___len__(self):
 
-        statement = QUERY(SELECT="people.stuff", FROM="things")
+        query = QUERY(SELECT="people.stuff", FROM="things")
 
-        self.assertEqual(len(statement), 2)
+        self.assertEqual(len(query), 2)
 
     def test_check(self):
 
-        statement = QUERY(SELECT="people.stuff", FROM="things")
+        query = QUERY(SELECT="people.stuff", FROM="things")
 
-        statement.check({})
-        self.assertEqual(statement.clauses, {})
+        query.check({})
+        self.assertEqual(query.clauses, {})
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for QUERY", QUERY, nope=False)
 
     def test_bind(self):
 
         model = unittest.mock.MagicMock()
-        statement = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+        query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
-        self.assertEqual(statement.model, model)
+        self.assertEqual(query.model, model)
 
     def test_generate(self):
 
-        statement = QUERY(SELECT="people.stuff", FROM="things")
+        query = QUERY(SELECT="people.stuff", FROM="things")
 
-        statement.generate()
-        self.assertEqual(statement.sql, "QUERY `people`.`stuff` FROM `things`")
-        self.assertEqual(statement.args, [])
+        query.generate()
+        self.assertEqual(query.sql, "QUERY `people`.`stuff` FROM `things`")
+        self.assertEqual(query.args, [])
 
 
 ASC = test_expression.ASC
@@ -106,23 +106,23 @@ class TestSELECT(unittest.TestCase):
 
     def test___init__(self):
 
-        statement = SELECT("*").FROM("people").WHERE(stuff__gt="things")
+        query = SELECT("*").FROM("people").WHERE(stuff__gt="things")
 
-        self.assertEqual(statement.FIELDS.expressions[0].name, "*")
-        self.assertEqual(statement.FROM.expressions[0].name, "people")
-        self.assertIsInstance(statement.WHERE.expressions[0], test_criterion.GT)
-        self.assertEqual(statement.WHERE.expressions[0].left.name, "stuff")
-        self.assertEqual(statement.WHERE.expressions[0].right.value, "things")
+        self.assertEqual(query.FIELDS.expressions[0].name, "*")
+        self.assertEqual(query.FROM.expressions[0].name, "people")
+        self.assertIsInstance(query.WHERE.expressions[0], test_criterion.GT)
+        self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
+        self.assertEqual(query.WHERE.expressions[0].right.value, "things")
 
     def test_generate(self):
 
-        statement = SELECT("*").OPTIONS("FAST").FROM("people").WHERE(stuff__gt="things")
+        query = SELECT("*").OPTIONS("FAST").FROM("people").WHERE(stuff__gt="things")
 
-        statement.generate()
-        self.assertEqual(statement.sql, "SELECT FAST * FROM `people` WHERE `stuff`>%s")
-        self.assertEqual(statement.args, ["things"])
+        query.generate()
+        self.assertEqual(query.sql, "SELECT FAST * FROM `people` WHERE `stuff`>%s")
+        self.assertEqual(query.args, ["things"])
 
-        statement = SELECT(
+        query = SELECT(
             "*"
         ).FROM(
             people=SELECT(
@@ -140,25 +140,25 @@ class TestSELECT(unittest.TestCase):
             )
         )
 
-        statement.generate()
-        self.assertEqual(statement.sql,
+        query.generate()
+        self.assertEqual(query.sql,
             "SELECT * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
             "AS `people` WHERE `stuff` IN "
             "(SELECT `f` FROM `g` WHERE `things`>%s>JSON(%s))"
         )
-        self.assertEqual(statement.args, ['$."a"[0][-1]."2"."-3"', '5'])
+        self.assertEqual(query.args, ['$."a"[0][-1]."2"."-3"', '5'])
 
-        statement.GROUP_BY("fee", "fie").HAVING(foe="fum").ORDER_BY("yin", yang=DESC).LIMIT(1, 2)
+        query.GROUP_BY("fee", "fie").HAVING(foe="fum").ORDER_BY("yin", yang=DESC).LIMIT(1, 2)
 
-        statement.generate()
-        self.assertEqual(statement.sql,
+        query.generate()
+        self.assertEqual(query.sql,
             "SELECT * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
             "AS `people` WHERE `stuff` IN "
             "(SELECT `f` FROM `g` WHERE `things`>%s>JSON(%s)) "
             "GROUP BY `fee`,`fie` HAVING `foe`=%s "
             "ORDER BY `yin`,`yang` DESC LIMIT %s,%s"
         )
-        self.assertEqual(statement.args, ['$."a"[0][-1]."2"."-3"', '5', 'fum', 1, 2])
+        self.assertEqual(query.args, ['$."a"[0][-1]."2"."-3"', '5', 'fum', 1, 2])
 
 
 class INSERT(relations_sql.INSERT):
@@ -177,50 +177,50 @@ class TestINSERT(unittest.TestCase):
 
     def test___init__(self):
 
-        statement = INSERT("people.stuff", "things", SELECT="*")
+        query = INSERT("people.stuff", "things", SELECT="*")
 
-        self.assertEqual(statement.TABLE.name, "stuff")
-        self.assertEqual(statement.TABLE.schema.name, "people")
-        self.assertEqual(statement.FIELDS.expressions[0].name, "things")
-        self.assertEqual(statement.SELECT.FIELDS.expressions[0].name, "*")
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.FIELDS.expressions[0].name, "things")
+        self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "*")
 
-        statement = INSERT("people.stuff", FIELDS=["things"], SELECT=SELECT("stuff").FROM("things"))
+        query = INSERT("people.stuff", FIELDS=["things"], SELECT=SELECT("stuff").FROM("things"))
 
-        self.assertEqual(statement.TABLE.name, "stuff")
-        self.assertEqual(statement.TABLE.schema.name, "people")
-        self.assertEqual(statement.FIELDS.expressions[0].name, "things")
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.FIELDS.expressions[0].name, "things")
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for INSERT", INSERT, "table", nope=False)
 
     def test_field(self):
 
-        statement = INSERT("people.stuff")
+        query = INSERT("people.stuff")
 
-        statement.field(["things"])
-        self.assertEqual(statement.FIELDS.expressions[0].name, "things")
+        query.field(["things"])
+        self.assertEqual(query.FIELDS.expressions[0].name, "things")
 
-        statement.field(["thingies"])
-        self.assertEqual(statement.FIELDS.expressions[0].name, "things")
+        query.field(["thingies"])
+        self.assertEqual(query.FIELDS.expressions[0].name, "things")
 
     def test_generate(self):
 
-        statement = INSERT("people").VALUES(stuff=1, things=2).VALUES(3, 4)
+        query = INSERT("people").VALUES(stuff=1, things=2).VALUES(3, 4)
 
-        statement.generate()
-        self.assertEqual(statement.sql,"INSERT INTO `people` (`stuff`,`things`) VALUES (%s,%s),(%s,%s)")
-        self.assertEqual(statement.args, [1, 2, 3, 4])
+        query.generate()
+        self.assertEqual(query.sql,"INSERT INTO `people` (`stuff`,`things`) VALUES (%s,%s),(%s,%s)")
+        self.assertEqual(query.args, [1, 2, 3, 4])
 
-        statement = INSERT("people").OPTIONS("FAST")
-        statement.SELECT("stuff").FROM("things")
+        query = INSERT("people").OPTIONS("FAST")
+        query.SELECT("stuff").FROM("things")
 
-        statement.generate()
-        self.assertEqual(statement.sql,"INSERT FAST INTO `people` SELECT `stuff` FROM `things`")
-        self.assertEqual(statement.args, [])
+        query.generate()
+        self.assertEqual(query.sql,"INSERT FAST INTO `people` SELECT `stuff` FROM `things`")
+        self.assertEqual(query.args, [])
 
-        statement = INSERT("people").VALUES(stuff=1, things=2).VALUES(3, 4)
-        statement.SELECT("stuff").FROM("things")
+        query = INSERT("people").VALUES(stuff=1, things=2).VALUES(3, 4)
+        query.SELECT("stuff").FROM("things")
 
-        self.assertRaisesRegex(relations_sql.SQLError, "set VALUES or SELECT but not both", statement.generate)
+        self.assertRaisesRegex(relations_sql.SQLError, "set VALUES or SELECT but not both", query.generate)
 
 
 class LIMITED(relations_sql.LIMITED):
@@ -239,34 +239,34 @@ class TestLIMITED(unittest.TestCase):
 
     def test___init__(self):
 
-        statement = LIMITED("people", SELECT="*")
+        query = LIMITED("people", SELECT="*")
 
-        self.assertEqual(statement.SELECT.expressions[0].name, "*")
-        self.assertEqual(statement.TABLE.name, "people")
+        self.assertEqual(query.SELECT.expressions[0].name, "*")
+        self.assertEqual(query.TABLE.name, "people")
 
-        statement = LIMITED("people", SELECT=test_clause.FIELDS("*"))
+        query = LIMITED("people", SELECT=test_clause.FIELDS("*"))
 
-        self.assertEqual(statement.SELECT.expressions[0].name, "*")
-        self.assertEqual(statement.TABLE.name, "people")
+        self.assertEqual(query.SELECT.expressions[0].name, "*")
+        self.assertEqual(query.TABLE.name, "people")
 
-        statement = LIMITED("people")
+        query = LIMITED("people")
 
-        self.assertEqual(statement.SELECT.expressions, [])
-        self.assertEqual(statement.TABLE.name, "people")
+        self.assertEqual(query.SELECT.expressions, [])
+        self.assertEqual(query.TABLE.name, "people")
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for INSERT", INSERT, "table", nope=False)
 
     def test_generate(self):
 
-        statement = LIMITED("people", SELECT=test_clause.FIELDS("*"), LIMIT=5)
+        query = LIMITED("people", SELECT=test_clause.FIELDS("*"), LIMIT=5)
 
-        statement.generate()
-        self.assertEqual(statement.sql, "LIMITED `people` * LIMIT %s")
-        self.assertEqual(statement.args, [5])
+        query.generate()
+        self.assertEqual(query.sql, "LIMITED `people` * LIMIT %s")
+        self.assertEqual(query.args, [5])
 
-        statement.LIMIT(10)
+        query.LIMIT(10)
 
-        self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", statement.generate)
+        self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", query.generate)
 
 
 class UPDATE(relations_sql.UPDATE):
@@ -288,16 +288,16 @@ class TestUPDATE(unittest.TestCase):
 
     def test_generate(self):
 
-        statement = UPDATE("people").SET(stuff="things").WHERE(things="stuff")
-        statement.OPTIONS("FAST").ORDER_BY("yin", yang=DESC).LIMIT(5)
+        query = UPDATE("people").SET(stuff="things").WHERE(things="stuff")
+        query.OPTIONS("FAST").ORDER_BY("yin", yang=DESC).LIMIT(5)
 
-        statement.generate()
-        self.assertEqual(statement.sql, "UPDATE FAST `people` SET `stuff`=%s WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
-        self.assertEqual(statement.args, ["things", "stuff", 5])
+        query.generate()
+        self.assertEqual(query.sql, "UPDATE FAST `people` SET `stuff`=%s WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
+        self.assertEqual(query.args, ["things", "stuff", 5])
 
-        statement.LIMIT(10)
+        query.LIMIT(10)
 
-        self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", statement.generate)
+        self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", query.generate)
 
 
 class DELETE(relations_sql.DELETE):
@@ -318,13 +318,13 @@ class TestDELETE(unittest.TestCase):
 
     def test_generate(self):
 
-        statement = DELETE("people").WHERE(things="stuff")
-        statement.OPTIONS("FAST").ORDER_BY("yin", yang=DESC).LIMIT(5)
+        query = DELETE("people").WHERE(things="stuff")
+        query.OPTIONS("FAST").ORDER_BY("yin", yang=DESC).LIMIT(5)
 
-        statement.generate()
-        self.assertEqual(statement.sql, "DELETE FAST FROM `people` WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
-        self.assertEqual(statement.args, ["stuff", 5])
+        query.generate()
+        self.assertEqual(query.sql, "DELETE FAST FROM `people` WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
+        self.assertEqual(query.args, ["stuff", 5])
 
-        statement.LIMIT(10)
+        query.LIMIT(10)
 
-        self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", statement.generate)
+        self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", query.generate)

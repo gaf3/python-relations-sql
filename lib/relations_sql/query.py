@@ -132,7 +132,7 @@ class SELECT(QUERY):
 
 class INSERT(QUERY):
     """
-    INSERT statement
+    INSERT query
     """
 
     NAME = "INSERT"
@@ -228,7 +228,7 @@ class LIMITED(QUERY):
 
 class UPDATE(LIMITED):
     """
-    UPDATE statement
+    UPDATE query
     """
 
     NAME = "UPDATE"
@@ -245,7 +245,7 @@ class UPDATE(LIMITED):
 
 class DELETE(LIMITED):
     """
-    DELETE statement
+    DELETE query
     """
 
     NAME = "DELETE"
