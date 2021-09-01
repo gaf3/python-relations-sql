@@ -6,7 +6,7 @@ import collections
 
 import relations_sql
 
-class STATEMENT(relations_sql.EXPRESSION):
+class QUERY(relations_sql.EXPRESSION):
     """
     Base query
     """
@@ -98,7 +98,7 @@ class STATEMENT(relations_sql.EXPRESSION):
         self.sql = f"{self.NAME} {' '.join(sql)}"
 
 
-class SELECT(STATEMENT):
+class SELECT(QUERY):
     """
     SELECT
     """
@@ -130,9 +130,9 @@ class SELECT(STATEMENT):
         return self.FIELDS(*args, **kwargs)
 
 
-class INSERT(STATEMENT):
+class INSERT(QUERY):
     """
-    INSERT statement
+    INSERT query
     """
 
     NAME = "INSERT"
@@ -194,7 +194,7 @@ class INSERT(STATEMENT):
         self.sql = f"{self.NAME} {' '.join(sql)}"
 
 
-class LIMITED(STATEMENT):
+class LIMITED(QUERY):
     """
     Clause that has a limit
     """
@@ -228,7 +228,7 @@ class LIMITED(STATEMENT):
 
 class UPDATE(LIMITED):
     """
-    UPDATE statement
+    UPDATE query
     """
 
     NAME = "UPDATE"
@@ -245,7 +245,7 @@ class UPDATE(LIMITED):
 
 class DELETE(LIMITED):
     """
-    DELETE statement
+    DELETE query
     """
 
     NAME = "DELETE"
