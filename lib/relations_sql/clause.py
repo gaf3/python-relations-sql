@@ -10,6 +10,9 @@ class CLAUSE(relations_sql.CRITERIA):
     Base class for clauses
     """
 
+    KWARG = None
+    KWARGS = None
+
     DELIMITTER = ","
 
     PARENTHESES = False
@@ -17,11 +20,32 @@ class CLAUSE(relations_sql.CRITERIA):
 
     statement = None
 
+    def __init__(self, *args, **kwargs):
+
+        self.expressions = []
+        self(*args, **kwargs)
+
     def __call__(self, *args, **kwargs):
         """
         Shorthand for add
         """
         return self.add(*args, **kwargs)
+
+    def add(self, *args, **kwargs):
+        """
+        Add expressiona
+        """
+
+        super().add(*args)
+
+        for key in sorted(kwargs.keys()):
+            if self.KWARG is None or isinstance(kwargs[key], relations_sql.SQL):
+                expression = kwargs[key]
+            else:
+                expression = self.KWARG(kwargs[key])
+            self.expressions.append(self.KWARGS(key, expression))
+
+        return self.statement or self
 
     def bind(self, statement):
         """
@@ -30,15 +54,6 @@ class CLAUSE(relations_sql.CRITERIA):
 
         self.statement = statement
         return self
-
-    def add(self, *args, **kwargs):
-        """
-        Add expressiona
-        """
-
-        super().add(*args, **kwargs)
-
-        return self.statement or self
 
     def generate(self):
         """

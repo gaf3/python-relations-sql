@@ -17,7 +17,6 @@ class SPACE(relations_sql.CRITERIA):
 class LOGIC(relations_sql.CRITERIA):
 
     ARGS = test_expression.VALUE
-    KWARGS = test_criterion.OP
 
     DELIMITTER = " LOGIC "
 
@@ -99,13 +98,6 @@ class TestCRITERIA(unittest.TestCase):
         self.assertEqual(criteria.expressions[1].left.name, "totes")
         self.assertEqual(criteria.expressions[1].right.value, "maigoats")
 
-        criteria.add(totes__a__null=False)
-        self.assertEqual(len(criteria.expressions), 3)
-        self.assertIsInstance(criteria.expressions[2], test_criterion.NULL)
-        self.assertEqual(criteria.expressions[2].left.name, "totes")
-        self.assertEqual(criteria.expressions[2].left.path, ["a"])
-        self.assertFalse(criteria.expressions[2].right.value)
-
         criteria = ALIAS()
 
         criteria.add("people")
@@ -118,14 +110,6 @@ class TestCRITERIA(unittest.TestCase):
         self.assertIsInstance(criteria.expressions[1], test_expression.AS)
         self.assertEqual(criteria.expressions[1].label.name, "totes")
         self.assertEqual(criteria.expressions[1].expression, "maigoats")
-
-        criteria.add(stuff="things")
-        self.assertEqual(len(criteria.expressions), 3)
-        self.assertIsInstance(criteria.expressions[2], test_expression.AS)
-        self.assertIsInstance(criteria.expressions[2].label, test_expression.NAME)
-        self.assertIsInstance(criteria.expressions[2].expression, test_expression.FIELD)
-        self.assertEqual(criteria.expressions[2].label.name, "stuff")
-        self.assertEqual(criteria.expressions[2].expression.name, "things")
 
     def test_generate(self):
 
@@ -140,21 +124,15 @@ class TestCRITERIA(unittest.TestCase):
         criteria = LOGIC()
         self.assertFalse(criteria.generate())
 
-        criteria(test_criterion.EQ("totes", "maigoats"), totes__a__null=False)
+        criteria(test_criterion.EQ("totes", "maigoats"), test_criterion.NE("toast", "myghost"))
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes`=%s LOGIC `totes`>%s IS NOT NULL)")
-        self.assertEqual(criteria.args, ["maigoats", '$."a"'])
-
-        criteria = ALIAS("people", stuff="things")
-        criteria.generate()
-        self.assertEqual(criteria.sql, "`people` ALIAS `things` AS `stuff`")
-        self.assertEqual(criteria.args, [])
+        self.assertEqual(criteria.sql, "(`totes`=%s LOGIC `toast`!=%s)")
+        self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
 
 class AND(relations_sql.AND):
 
     ARGS = test_expression.VALUE
-    KWARGS = test_criterion.OP
 
 class TestAND(unittest.TestCase):
 
@@ -162,16 +140,15 @@ class TestAND(unittest.TestCase):
 
     def test_generate(self):
 
-        criteria = AND(test_criterion.EQ("totes", "maigoats"), totes__a__null=False)
+        criteria = AND(test_criterion.EQ("totes", "maigoats"), test_criterion.NE("toast", "myghost"))
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes`=%s AND `totes`>%s IS NOT NULL)")
-        self.assertEqual(criteria.args, ["maigoats", '$."a"'])
+        self.assertEqual(criteria.sql, "(`totes`=%s AND `toast`!=%s)")
+        self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
 
 class OR(relations_sql.OR):
 
     ARGS = test_expression.VALUE
-    KWARGS = test_criterion.OP
 
 class TestOR(unittest.TestCase):
 
@@ -179,7 +156,349 @@ class TestOR(unittest.TestCase):
 
     def test_generate(self):
 
-        criteria = OR(test_criterion.EQ("totes", "maigoats"), totes__a__null=False)
+        criteria = OR(test_criterion.EQ("totes", "maigoats"), test_criterion.NE("toast", "myghost"))
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes`=%s OR `totes`>%s IS NOT NULL)")
-        self.assertEqual(criteria.args, ["maigoats", '$."a"'])
+        self.assertEqual(criteria.sql, "(`totes`=%s OR `toast`!=%s)")
+        self.assertEqual(criteria.args, ["maigoats", "myghost"])
+
+
+class SETS(test_criterion.SQL, relations_sql.SETS):
+
+    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
+
+        super().__init__(left, right, jsonify, **kwargs)
+
+        self.expression = AND(self.left, self.right)
+
+class TestSETS(unittest.TestCase):
+
+    def test_generate(self):
+
+        criteria = SETS("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "(`totes` AND JSON(%s))")
+        self.assertEqual(criteria.args, ['["mai", "goats"]'])
+
+
+class HAS(test_criterion.SQL, relations_sql.HAS):
+
+    CONTAINS = test_criterion.CONTAINS
+
+class TestHAS(unittest.TestCase):
+
+    def test___init__(self):
+
+        criteria = HAS("totes", ["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.left.name, "totes")
+        self.assertEqual(criteria.expression.right.value, ["mai", "goats"])
+
+        criteria = HAS(totes=["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.left.name, "totes")
+        self.assertEqual(criteria.expression.right.value, ["mai", "goats"])
+
+    def test___len__(self):
+
+        criteria = HAS("totes", ["mai", "goats"])
+
+        self.assertEqual(len(criteria), 1)
+
+    def test_generate(self):
+
+        criteria = HAS("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "CONTAINS(`totes`,JSON(%s))")
+        self.assertEqual(criteria.args, ['["mai", "goats"]'])
+
+
+class NOTHAS(test_criterion.SQL, relations_sql.NOTHAS):
+
+    NOT = test_expression.NOT
+    HAS = HAS
+
+class TestNOTHAS(unittest.TestCase):
+
+    def test___init__(self):
+
+        criteria = NOTHAS("totes", ["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_expression.NOT)
+        self.assertIsInstance(criteria.expression.expression, HAS)
+        self.assertIsInstance(criteria.expression.expression.expression, test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expression.expression.left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.right.value, ["mai", "goats"])
+
+        criteria = NOTHAS(totes=["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_expression.NOT)
+        self.assertIsInstance(criteria.expression.expression, HAS)
+        self.assertIsInstance(criteria.expression.expression.expression, test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expression.expression.left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.right.value, ["mai", "goats"])
+
+    def test_generate(self):
+
+        criteria = NOTHAS("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "NOT CONTAINS(`totes`,JSON(%s))")
+        self.assertEqual(criteria.args, ['["mai", "goats"]'])
+
+
+class ANY(test_criterion.SQL, relations_sql.ANY):
+
+    OR = OR
+    LEFT = test_expression.FIELD
+    VALUE = test_expression.VALUE
+    CONTAINS = test_criterion.CONTAINS
+
+class TestANY(unittest.TestCase):
+
+    def test___init__(self):
+
+        criteria = ANY("totes", ["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, OR)
+        self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expressions[1], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[0].right.value, ["mai"])
+        self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[1].right.value, ["goats"])
+
+        criteria = ANY(totes=["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, OR)
+        self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expressions[1], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[0].right.value, ["mai"])
+        self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[1].right.value, ["goats"])
+
+        self.assertRaisesRegex(relations_sql.SQLError, "must be list", ANY, totes="mai goats")
+
+    def test_generate(self):
+
+        criteria = ANY("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "(CONTAINS(`totes`,JSON(%s)) OR CONTAINS(`totes`,JSON(%s)))")
+        self.assertEqual(criteria.args, ['["mai"]', '["goats"]'])
+
+
+class NOTANY(test_criterion.SQL, relations_sql.NOTANY):
+
+    NOT = test_expression.NOT
+    ANY = ANY
+
+class TestNOTANY(unittest.TestCase):
+
+    def test___init__(self):
+
+        criteria = NOTANY("totes", ["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_expression.NOT)
+        self.assertIsInstance(criteria.expression.expression, ANY)
+        self.assertIsInstance(criteria.expression.expression.expression, OR)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].right.value, ["mai"])
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].right.value, ["goats"])
+
+        criteria = NOTANY(totes=["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_expression.NOT)
+        self.assertIsInstance(criteria.expression.expression, ANY)
+        self.assertIsInstance(criteria.expression.expression.expression, OR)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].right.value, ["mai"])
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].right.value, ["goats"])
+
+    def test_generate(self):
+
+        criteria = NOTANY("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "NOT (CONTAINS(`totes`,JSON(%s)) OR CONTAINS(`totes`,JSON(%s)))")
+        self.assertEqual(criteria.args, ['["mai"]', '["goats"]'])
+
+
+class ALL(test_criterion.SQL, relations_sql.ALL):
+
+    AND = AND
+    CONTAINS = test_criterion.CONTAINS
+    LENGTHS = test_criterion.LENGTHS
+
+class TestALL(unittest.TestCase):
+
+    def test___init__(self):
+
+        criteria = ALL("totes", ["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, AND)
+        self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expressions[1], test_criterion.LENGTHS)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[0].right.value, ["mai", "goats"])
+        self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[1].right.value, ["mai", "goats"])
+
+        criteria = ALL(totes=["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, AND)
+        self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expressions[1], test_criterion.LENGTHS)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[0].right.value, ["mai", "goats"])
+        self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expressions[1].right.value, ["mai", "goats"])
+
+    def test_generate(self):
+
+        criteria = ALL("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "(CONTAINS(`totes`,JSON(%s)) AND LENGTHS(`totes`,JSON(%s)))")
+        self.assertEqual(criteria.args, ['["mai", "goats"]', '["mai", "goats"]'])
+
+
+class NOTALL(test_criterion.SQL, relations_sql.NOTALL):
+
+    NOT = test_expression.NOT
+    ALL = ALL
+
+class TestNOTALL(unittest.TestCase):
+
+    def test___init__(self):
+
+        criteria = NOTALL("totes", ["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_expression.NOT)
+        self.assertIsInstance(criteria.expression.expression, ALL)
+        self.assertIsInstance(criteria.expression.expression.expression, AND)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1], test_criterion.LENGTHS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].right.value, ["mai", "goats"])
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].right.value, ["mai", "goats"])
+
+        criteria = NOTALL(totes=["mai", "goats"])
+
+        self.assertIsInstance(criteria.expression, test_expression.NOT)
+        self.assertIsInstance(criteria.expression.expression, ALL)
+        self.assertIsInstance(criteria.expression.expression.expression, AND)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0], test_criterion.CONTAINS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1], test_criterion.LENGTHS)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[0].right, test_expression.VALUE)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expression.expression.expressions[1].right, test_expression.VALUE)
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[0].right.value, ["mai", "goats"])
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].left.name, "totes")
+        self.assertEqual(criteria.expression.expression.expression.expressions[1].right.value, ["mai", "goats"])
+
+    def test_generate(self):
+
+        criteria = NOTALL("totes", ["mai", "goats"])
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "NOT (CONTAINS(`totes`,JSON(%s)) AND LENGTHS(`totes`,JSON(%s)))")
+        self.assertEqual(criteria.args, ['["mai", "goats"]', '["mai", "goats"]'])
+
+
+class OP(test_criterion.SQL, relations_sql.OP):
+
+    CRITERIONS = {
+        'null': test_criterion.NULL,
+        'eq': test_criterion.EQ,
+        'ne': test_criterion.NE,
+        'gt': test_criterion.GT,
+        'gte': test_criterion.GTE,
+        'lt': test_criterion.LT,
+        'lte': test_criterion.LTE,
+        'like': test_criterion.LIKE,
+        'notlike': test_criterion.NOTLIKE,
+        'in': test_criterion.IN,
+        'notin': test_criterion.NOTIN
+    }
+
+class TestOP(unittest.TestCase):
+
+    def test___new__(self):
+
+        criteria = OP("totes__null", True)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "`totes` IS NULL")
+        self.assertEqual(criteria.args, [])
+
+        criteria = OP(totes__a__null=False)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "`totes`>%s IS NOT NULL")
+        self.assertEqual(criteria.args, ['$."a"'])
+
+        criteria = OP(totes=1, JSONIFY=True)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "JSON(`totes`)=JSON(%s)")
+        self.assertEqual(criteria.args, ['1'])
+
+        self.assertRaisesRegex(relations_sql.SQLError, "need single pair", OP, "nope")
+
+        criteria = OP(totes__a__null=False, EXTRACTED=True)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, "`totes__a` IS NOT NULL")
+        self.assertEqual(criteria.args, [])
+
+        self.assertRaisesRegex(relations_sql.SQLError, "need single pair", OP, "nope")

@@ -47,21 +47,21 @@ class TestVALUE(unittest.TestCase):
 
     def test___init__(self):
 
-        expression = relations_sql.VALUE("unit")
+        expression = VALUE("unit")
         self.assertEqual(expression.value, "unit")
         self.assertFalse(expression.jsonify)
 
-        expression = relations_sql.VALUE("test", jsonify=True)
+        expression = VALUE("test", jsonify=True)
         self.assertEqual(expression.value, "test")
         self.assertTrue(expression.jsonify)
 
-        expression = relations_sql.VALUE({"a": 1})
+        expression = VALUE({"a": 1})
         self.assertEqual(expression.value, {"a": 1})
         self.assertTrue(expression.jsonify)
 
     def test___len__(self):
 
-        expression = relations_sql.VALUE("unit")
+        expression = VALUE("unit")
         self.assertEqual(len(expression), 1)
 
     def test_generate(self):
@@ -80,6 +80,36 @@ class TestVALUE(unittest.TestCase):
         expression.generate()
         self.assertEqual(expression.sql, "JSON(%s)")
         self.assertEqual(expression.args, ['{"a": 1}'])
+
+
+class NOT(test_sql.SQL, relations_sql.NOT):
+
+    VALUE = VALUE
+
+class TestNOT(unittest.TestCase):
+
+    maxDiff = None
+
+    def test___init__(self):
+
+        expression = NOT("unit")
+        self.assertIsInstance(expression.expression, VALUE)
+        self.assertEqual(expression.expression.value, "unit")
+
+        expression = NOT(relations_sql.SQL("test"))
+        self.assertEqual(expression.expression.sql, "test")
+
+    def test_generate(self):
+
+        expression = NOT("unit")
+        expression.generate()
+        self.assertEqual(expression.sql, "NOT %s")
+        self.assertEqual(expression.args, ["unit"])
+
+        expression = NOT(relations_sql.SQL("test"))
+        expression.generate()
+        self.assertEqual(expression.sql, "NOT test")
+        self.assertEqual(expression.args, [])
 
 
 class LIST(test_sql.SQL, relations_sql.LIST):
@@ -273,11 +303,11 @@ class TestFIELD(unittest.TestCase):
 
         schema = relations_sql.SQL("unit", ["test"])
 
-        expression = FIELD("people.stuff.things__a__0___1____2_____3", schema=schema)
-        self.assertEqual(expression.name, "things")
+        expression = FIELD("people.stuff.things__a__0___1____2_____3", schema=schema, extracted=True)
+        self.assertEqual(expression.name, "things__a__0___1____2_____3")
         self.assertEqual(expression.table.name, "stuff")
         self.assertEqual(expression.table.schema, schema)
-        self.assertEqual(expression.path, ["a", 0, -1, "2", "-3"])
+        self.assertEqual(expression.path, [])
         self.assertFalse(expression.jsonify)
 
     def test_split(self):
