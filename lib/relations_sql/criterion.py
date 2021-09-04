@@ -79,7 +79,7 @@ class NULL(CRITERION):
 
         OPERAND = self.INVERT if bool(self.right.value) == bool(self.invert) else self.OPERAND
 
-        self.sql = f"%s %s" % (self.left.sql, OPERAND)
+        self.sql = "%s %s" % (self.left.sql, OPERAND)
 
 
 class EQ(CRITERION):
