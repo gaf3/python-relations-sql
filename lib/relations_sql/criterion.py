@@ -12,14 +12,14 @@ class CRITERION(relations_sql.EXPRESSION):
     LEFT = None
     RIGHT = None
 
-    OPERAND = None # OPERAND to use (if any)
-    INVERT = None # OPERAND to use (if not)
+    OPERAND = None # OPERAND to use as format string (if any)
+    INVERT = None # OPERAND to use as format string (if not)
+    PARENTHESES = False
 
     left = None    # Left expression
     right = None   # Right expression
-    invert = False  # Whether to invert the relationship
 
-    def __init__(self, left=None, right=None, invert=invert, jsonify=False, extracted=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
         if invert and self.INVERT is None:
             raise relations_sql.SQLError(self, "no invert without INVERT operand")
@@ -53,9 +53,9 @@ class CRITERION(relations_sql.EXPRESSION):
         self.args = []
 
         self.express(self.left, sql)
-        self.express(self.right, sql, parentheses=isinstance(self.right, relations_sql.SELECT))
+        self.express(self.right, sql, parentheses=isinstance(self.right, relations_sql.SELECT) or self.PARENTHESES)
 
-        self.sql = self.INVERT.join(sql) if self.invert else self.OPERAND.join(sql)
+        self.sql = self.INVERT % tuple(sql) if self.invert else self.OPERAND % tuple(sql)
 
 
 class NULL(CRITERION):
@@ -63,8 +63,8 @@ class NULL(CRITERION):
     For IS NULL and IS NOT NULL
     """
 
-    OPERAND = "IS NULL"
-    INVERT = "IS NOT NULL"
+    OPERAND = "%s IS NULL"
+    INVERT = "%s IS NOT NULL"
 
     def __len__(self):
 
@@ -79,7 +79,7 @@ class NULL(CRITERION):
 
         OPERAND = self.INVERT if bool(self.right.value) == bool(self.invert) else self.OPERAND
 
-        self.sql = "%s %s" % (self.left.sql, OPERAND)
+        self.sql = OPERAND % tuple(sql)
 
 
 class EQ(CRITERION):
@@ -87,8 +87,8 @@ class EQ(CRITERION):
     For =
     """
 
-    OPERAND = "="
-    INVERT = "!="
+    OPERAND = "%s=%s"
+    INVERT = "%s!=%s"
 
 
 class GT(CRITERION):
@@ -96,7 +96,7 @@ class GT(CRITERION):
     For >
     """
 
-    OPERAND = ">"
+    OPERAND = "%s>%s"
 
 
 class GTE(CRITERION):
@@ -104,7 +104,7 @@ class GTE(CRITERION):
     For >=
     """
 
-    OPERAND = ">="
+    OPERAND = "%s>=%s"
 
 
 class LT(CRITERION):
@@ -112,7 +112,7 @@ class LT(CRITERION):
     For <
     """
 
-    OPERAND = "<"
+    OPERAND = "%s<%s"
 
 
 class LTE(CRITERION):
@@ -120,7 +120,7 @@ class LTE(CRITERION):
     For <=
     """
 
-    OPERAND = "<="
+    OPERAND = "%s<=%s"
 
 
 class LIKE(CRITERION):
@@ -128,8 +128,48 @@ class LIKE(CRITERION):
     For fuzzy matching
     """
 
-    OPERAND = " LIKE "
-    INVERT = " NOT LIKE "
+    OPERAND = "%s LIKE %s"
+    INVERT = "%s NOT LIKE %s"
+
+    BEFORE = ""
+    AFTER = ""
+
+    WILDCARD = "%"
+
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
+
+        if kwargs:
+            left, right = list(kwargs.items())[0]
+
+        if right is not None:
+            right = f"{self.BEFORE}{right}{self.AFTER}"
+
+        super().__init__(left, right, invert=invert, jsonify=jsonify, extracted=extracted)
+
+
+class START(LIKE):
+    """
+    For fuzzy matching end of string
+    """
+
+    AFTER = LIKE.WILDCARD
+
+
+class MID(LIKE):
+    """
+    For fuzzy matching end of string
+    """
+
+    BEFORE = LIKE.WILDCARD
+    AFTER = LIKE.WILDCARD
+
+
+class END(LIKE):
+    """
+    For fuzzy matching end of string
+    """
+
+    BEFORE = LIKE.WILDCARD
 
 
 class IN(CRITERION):
@@ -140,8 +180,9 @@ class IN(CRITERION):
     RIGHT = relations_sql.LIST
     VALUE = relations_sql.VALUE
 
-    OPERAND = " IN "
-    INVERT = " NOT IN "
+    OPERAND = "%s IN %s"
+    INVERT = "%s NOT IN %s"
+    PARENTHESES = True
 
     def generate(self):
         """
@@ -150,13 +191,7 @@ class IN(CRITERION):
 
         if self.right:
 
-            sql = []
-            self.args = []
-
-            self.express(self.left, sql)
-            self.express(self.right, sql, parentheses=True)
-
-            self.sql = self.INVERT.join(sql) if self.invert else self.OPERAND.join(sql)
+            super().generate()
 
         else:
 
@@ -165,27 +200,7 @@ class IN(CRITERION):
             self.sql = value.sql
             self.args = value.args
 
-
-class RANGES(CRITERION):
-    """
-    RANGES class, for criterions of sets
-    """
-
-    def generate(self):
-        """
-        Generate the left and right with operand in between
-        """
-
-        sql = []
-        self.args = []
-
-        self.express(self.left, sql)
-        self.express(self.right, sql, parentheses=isinstance(self.right, relations_sql.SELECT))
-
-        self.sql = self.OPERAND % (self.left.sql, self.right.sql)
-
-
-class CONTAINS(RANGES):
+class CONTAINS(CRITERION):
     """
     Wether one set contains another
     """
@@ -196,7 +211,7 @@ class CONTAINS(RANGES):
     OPERAND = "CONTAINS(%s,%s)"
 
 
-class LENGTHS(RANGES):
+class LENGTHS(CRITERION):
     """
     Wether one set contains another
     """

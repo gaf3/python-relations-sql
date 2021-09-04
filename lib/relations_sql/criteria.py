@@ -80,7 +80,7 @@ class OR(CRITERIA):
     DELIMITTER = ' OR '
 
 
-class SETS(relations_sql.RANGES):
+class SETS(relations_sql.CRITERION):
     """
     For comparing sets with each other
     """
@@ -166,6 +166,9 @@ class OP:
         'lt': relations_sql.LT,
         'lte': relations_sql.LTE,
         'like': relations_sql.LIKE,
+        'start': relations_sql.START,
+        'mid': relations_sql.MID,
+        'end': relations_sql.END,
         'in': relations_sql.IN,
         'has': HAS,
         'any': ANY,
