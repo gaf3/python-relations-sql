@@ -192,6 +192,14 @@ class TestINSERT(unittest.TestCase):
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for INSERT", INSERT, "table", nope=False)
 
+    def test___call__(self):
+
+        query = INSERT("nope", "things", SELECT="*")
+        query.TABLE("people.stuff")
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+
     def test_field(self):
 
         query = INSERT("people.stuff")
@@ -284,6 +292,14 @@ class TestUPDATE(unittest.TestCase):
 
     maxDiff = None
 
+    def test___call__(self):
+
+        query = UPDATE("nope").SET(stuff="things").WHERE(things="stuff")
+        query.TABLE("people.stuff")
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+
     def test_generate(self):
 
         query = UPDATE("people").SET(stuff="things").WHERE(things="stuff")
@@ -311,6 +327,14 @@ class DELETE(relations_sql.DELETE):
 class TestDELETE(unittest.TestCase):
 
     maxDiff = None
+
+    def test___call__(self):
+
+        query = DELETE("nope").WHERE(things="stuff")
+        query.TABLE("people.stuff")
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
 
     def test_generate(self):
 
