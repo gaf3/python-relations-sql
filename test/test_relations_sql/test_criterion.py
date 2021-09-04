@@ -233,17 +233,7 @@ class TestLTE(unittest.TestCase):
 class LIKE(SQL, relations_sql.LIKE):
     pass
 
-class BEFORE(LIKE):
-
-    BEFORE = LIKE.WILDCARD
-
-class AFTER(LIKE):
-
-    AFTER = LIKE.WILDCARD
-
 class TestLIKE(unittest.TestCase):
-
-
 
     def test_generate(self):
 
@@ -251,31 +241,19 @@ class TestLIKE(unittest.TestCase):
 
         criterion.generate()
         self.assertEqual(criterion.sql, "`totes` LIKE %s")
-        self.assertEqual(criterion.args, ["maigoats"])
-
-        criterion = BEFORE("totes", "maigoats")
-
-        criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` LIKE %s")
-        self.assertEqual(criterion.args, ["%maigoats"])
-
-        criterion = AFTER("totes", "maigoats")
-
-        criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` LIKE %s")
-        self.assertEqual(criterion.args, ["maigoats%"])
+        self.assertEqual(criterion.args, ["%maigoats%"])
 
         criterion = LIKE("totes", "maigoats", invert=True)
 
         criterion.generate()
         self.assertEqual(criterion.sql, "`totes` NOT LIKE %s")
-        self.assertEqual(criterion.args, ["maigoats"])
+        self.assertEqual(criterion.args, ["%maigoats%"])
 
         criterion = LIKE(totes__a="maigoats")
 
         criterion.generate()
         self.assertEqual(criterion.sql, "`totes`#>>%s LIKE JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.args, ['$."a"', '"%maigoats%"'])
 
 
 class START(SQL, relations_sql.START):
@@ -302,32 +280,6 @@ class TestSTART(unittest.TestCase):
         criterion.generate()
         self.assertEqual(criterion.sql, "`totes`#>>%s LIKE JSON(%s)")
         self.assertEqual(criterion.args, ['$."a"', '"maigoats%"'])
-
-
-class MID(SQL, relations_sql.MID):
-    pass
-
-class TestMID(unittest.TestCase):
-
-    def test_generate(self):
-
-        criterion = MID("totes", "maigoats")
-
-        criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` LIKE %s")
-        self.assertEqual(criterion.args, ["%maigoats%"])
-
-        criterion = MID("totes", "maigoats", invert=True)
-
-        criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` NOT LIKE %s")
-        self.assertEqual(criterion.args, ["%maigoats%"])
-
-        criterion = MID(totes__a="maigoats")
-
-        criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s LIKE JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"%maigoats%"'])
 
 
 class END(SQL, relations_sql.END):

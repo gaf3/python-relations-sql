@@ -131,10 +131,8 @@ class LIKE(CRITERION):
     OPERAND = "%s LIKE %s"
     INVERT = "%s NOT LIKE %s"
 
-    BEFORE = ""
-    AFTER = ""
-
-    WILDCARD = "%"
+    BEFORE = "%"
+    AFTER = "%"
 
     def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
@@ -152,16 +150,7 @@ class START(LIKE):
     For fuzzy matching end of string
     """
 
-    AFTER = LIKE.WILDCARD
-
-
-class MID(LIKE):
-    """
-    For fuzzy matching end of string
-    """
-
-    BEFORE = LIKE.WILDCARD
-    AFTER = LIKE.WILDCARD
+    BEFORE = ""
 
 
 class END(LIKE):
@@ -169,7 +158,7 @@ class END(LIKE):
     For fuzzy matching end of string
     """
 
-    BEFORE = LIKE.WILDCARD
+    AFTER = ""
 
 
 class IN(CRITERION):

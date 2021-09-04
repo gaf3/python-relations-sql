@@ -167,7 +167,6 @@ class OP:
         'lte': relations_sql.LTE,
         'like': relations_sql.LIKE,
         'start': relations_sql.START,
-        'mid': relations_sql.MID,
         'end': relations_sql.END,
         'in': relations_sql.IN,
         'has': HAS,
