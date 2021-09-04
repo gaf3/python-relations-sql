@@ -13,11 +13,16 @@ class CRITERION(relations_sql.EXPRESSION):
     RIGHT = None
 
     OPERAND = None # OPERAND to use (if any)
+    INVERT = None # OPERAND to use (if not)
 
     left = None    # Left expression
     right = None   # Right expression
+    invert = False  # Whether to invert the relationship
 
-    def __init__(self, left=None, right=None, jsonify=False, extracted=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=invert, jsonify=False, extracted=False, **kwargs):
+
+        if invert and self.INVERT is None:
+            raise relations_sql.SQLError(self, "no invert without INVERT operand")
 
         if kwargs:
             left, right = list(kwargs.items())[0]
@@ -33,6 +38,7 @@ class CRITERION(relations_sql.EXPRESSION):
 
         self.left = left
         self.right = right
+        self.invert = invert
 
     def __len__(self):
 
@@ -49,7 +55,7 @@ class CRITERION(relations_sql.EXPRESSION):
         self.express(self.left, sql)
         self.express(self.right, sql, parentheses=isinstance(self.right, relations_sql.SELECT))
 
-        self.sql = self.OPERAND.join(sql)
+        self.sql = self.INVERT.join(sql) if self.invert else self.OPERAND.join(sql)
 
 
 class NULL(CRITERION):
@@ -57,7 +63,8 @@ class NULL(CRITERION):
     For IS NULL and IS NOT NULL
     """
 
-    OPERAND = "NULL"
+    OPERAND = "IS NULL"
+    INVERT = "IS NOT NULL"
 
     def __len__(self):
 
@@ -69,10 +76,10 @@ class NULL(CRITERION):
         self.args = []
 
         self.express(self.left, sql)
-        sql.append('IS' if self.right.value else 'IS NOT')
-        sql.append(self.OPERAND)
 
-        self.sql = ' '.join(sql)
+        OPERAND = self.INVERT if bool(self.right.value) == bool(self.invert) else self.OPERAND
+
+        self.sql = f"%s %s" % (self.left.sql, OPERAND)
 
 
 class EQ(CRITERION):
@@ -81,14 +88,7 @@ class EQ(CRITERION):
     """
 
     OPERAND = "="
-
-
-class NE(CRITERION):
-    """
-    For =
-    """
-
-    OPERAND = "!="
+    INVERT = "!="
 
 
 class GT(CRITERION):
@@ -129,24 +129,19 @@ class LIKE(CRITERION):
     """
 
     OPERAND = " LIKE "
+    INVERT = " NOT LIKE "
 
 
-class NOTLIKE(CRITERION):
+class IN(CRITERION):
     """
-    For fuzzy mismatching
-    """
-
-    OPERAND = " NOT LIKE "
-
-
-class RANGE(CRITERION):
-    """
-    RANGE class, for comparing a value against a set of values
+    For IN
     """
 
-    VALUE = None
+    RIGHT = relations_sql.LIST
+    VALUE = relations_sql.VALUE
 
-    EMPTY = None
+    OPERAND = " IN "
+    INVERT = " NOT IN "
 
     def generate(self):
         """
@@ -161,40 +156,14 @@ class RANGE(CRITERION):
             self.express(self.left, sql)
             self.express(self.right, sql, parentheses=True)
 
-            self.sql = self.OPERAND.join(sql)
+            self.sql = self.INVERT.join(sql) if self.invert else self.OPERAND.join(sql)
 
         else:
 
-            value = self.VALUE(self.EMPTY)
+            value = self.VALUE(self.invert)
             value.generate()
             self.sql = value.sql
             self.args = value.args
-
-
-class IN(RANGE):
-    """
-    For IN
-    """
-
-    RIGHT = relations_sql.LIST
-    VALUE = relations_sql.VALUE
-
-    EMPTY = False
-
-    OPERAND = " IN "
-
-
-class NOTIN(RANGE):
-    """
-    For NOT IN
-    """
-
-    RIGHT = relations_sql.LIST
-    VALUE = relations_sql.VALUE
-
-    EMPTY = True
-
-    OPERAND = " NOT IN "
 
 
 class RANGES(CRITERION):
