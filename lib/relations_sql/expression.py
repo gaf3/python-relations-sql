@@ -138,11 +138,21 @@ class NAME(EXPRESSION):
 
     def __init__(self, name):
 
-        self.name = name
+        self(name)
 
     def __len__(self):
 
         return 1 if self.name is not None else 0
+
+    def __call__(self, name):
+
+        self.set(name)
+
+    def set(self, name):
+        """
+        Set the NAME explicitly
+        """
+        self.name = name
 
     def generate(self):
 
@@ -170,6 +180,14 @@ class TABLE(SCHEMA):
     prefix = None
 
     def __init__(self, name, schema=None, prefix=None):
+
+        self(name, schema, prefix)
+
+    def __call__(self, name, schema=None, prefix=None):
+
+        self.set(name, schema, prefix)
+
+    def set(self, name, schema=None, prefix=None):
 
         pieces = name.split(self.SEPARATOR)
 
@@ -215,6 +233,14 @@ class FIELD(TABLE):
     path = None     # path to use in the JSON
 
     def __init__(self, name, table=None, schema=None, jsonify=False, extracted=False):
+
+        self(name, table, schema, jsonify, extracted)
+
+    def __call__(self, name, table=None, schema=None, jsonify=False, extracted=False):
+
+        self.set(name, table, schema, jsonify, extracted)
+
+    def set(self, name, table=None, schema=None, jsonify=False, extracted=False):
 
         pieces = name.split(self.SEPARATOR)
 
