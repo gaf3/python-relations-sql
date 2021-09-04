@@ -71,6 +71,29 @@ class VALUE(EXPRESSION):
             self.args = [self.value]
 
 
+class NOT(EXPRESSION):
+    """
+    Negation
+    """
+
+    VALUE = VALUE
+
+    OPERAND = "NOT %s"
+
+    expression = None
+
+    def __init__(self, expression):
+
+        self.expression = expression if isinstance(expression, relations_sql.SQL) else self.VALUE(expression)
+
+    def generate(self):
+
+        self.args = []
+
+        self.express(self.expression, [])
+        self.sql = self.OPERAND % self.expression.sql
+
+
 class LIST(EXPRESSION):
     """
     Holds a list of values for IN, NOT IN, and VALUES
@@ -191,11 +214,11 @@ class FIELD(TABLE):
     jsonify = None # whether we need to cast this field as JSON
     path = None     # path to use in the JSON
 
-    def __init__(self, name, table=None, schema=None, jsonify=False):
+    def __init__(self, name, table=None, schema=None, jsonify=False, extracted=False):
 
         pieces = name.split(self.SEPARATOR)
 
-        self.name, self.path = self.split(pieces.pop(-1))
+        self.name, self.path = self.split(pieces.pop(-1)) if not extracted else (pieces.pop(-1), [])
 
         if pieces:
             piece = pieces.pop(-1)

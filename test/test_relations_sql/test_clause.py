@@ -3,6 +3,7 @@ import unittest.mock
 
 import test_expression
 import test_criterion
+import test_criteria
 
 
 import relations_sql
@@ -236,7 +237,7 @@ class TestFROM(unittest.TestCase):
 class WHERE(relations_sql.WHERE):
 
     ARGS = test_expression.VALUE
-    KWARGS = test_criterion.OP
+    KWARGS = test_criteria.OP
 
 class TestWHERE(unittest.TestCase):
 
@@ -303,7 +304,7 @@ class TestGROUP_BY(unittest.TestCase):
 class HAVING(relations_sql.HAVING):
 
     ARGS = test_expression.VALUE
-    KWARGS = test_criterion.OP
+    KWARGS = test_criteria.OP
 
 class TestHAVING(unittest.TestCase):
 

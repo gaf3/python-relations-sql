@@ -50,6 +50,16 @@ class TestCRITERION(unittest.TestCase):
         self.assertEqual(criterion.right.value, "maigoats")
         self.assertTrue(criterion.right.jsonify)
 
+        criterion = CRITERION(totes__a="maigoats", extracted=True)
+
+        self.assertIsInstance(criterion.left, test_expression.FIELD)
+        self.assertEqual(criterion.left.name, "totes__a")
+        self.assertEqual(criterion.left.path, [])
+        self.assertFalse(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertFalse(criterion.right.jsonify)
+
     def test___len__(self):
 
         criterion = CRITERION("totes", "maigoats", jsonify=True)
@@ -389,36 +399,46 @@ class TestNOTIN(unittest.TestCase):
         self.assertEqual(criterion.args, [True])
 
 
-class OP(SQL, relations_sql.OP):
+class RANGES(SQL, relations_sql.RANGES):
 
-    CRITERIONS = {
-        'null': NULL,
-        'eq': EQ,
-        'ne': NE,
-        'gt': GT,
-        'gte': GTE,
-        'lt': LT,
-        'lte': LTE,
-        'like': LIKE,
-        'notlike': NOTLIKE,
-        'in': IN,
-        'notin': NOTIN
-    }
+    OPERAND = "RANGES(%s,%s)"
 
-class TestOP(unittest.TestCase):
+class TestRANGES(unittest.TestCase):
 
-    def test___new__(self):
+    def test_generate(self):
 
-        criterion = OP("totes__null", True)
+        criterion = RANGES("totes", ["mai", "goats"])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` IS NULL")
-        self.assertEqual(criterion.args, [])
+        self.assertEqual(criterion.sql, "RANGES(`totes`,JSON(%s))")
+        self.assertEqual(criterion.args, ['["mai", "goats"]'])
 
-        criterion = OP(totes__a__null=False)
+
+class CONTAINS(SQL, relations_sql.CONTAINS):
+
+    OPERAND = "CONTAINS(%s,%s)"
+
+class TestCONTAINS(unittest.TestCase):
+
+    def test_generate(self):
+
+        criterion = CONTAINS("totes", ["mai", "goats"])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`>%s IS NOT NULL")
-        self.assertEqual(criterion.args, ['$."a"'])
+        self.assertEqual(criterion.sql, "CONTAINS(`totes`,JSON(%s))")
+        self.assertEqual(criterion.args, ['["mai", "goats"]'])
 
-        self.assertRaisesRegex(relations_sql.SQLError, "need single pair", OP, "nope")
+
+class LENGTHS(SQL, relations_sql.LENGTHS):
+
+    OPERAND = "LENGTHS(%s,%s)"
+
+class TestLENGTHS(unittest.TestCase):
+
+    def test_generate(self):
+
+        criterion = LENGTHS("totes", ["mai", "goats"])
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, "LENGTHS(`totes`,JSON(%s))")
+        self.assertEqual(criterion.args, ['["mai", "goats"]'])
