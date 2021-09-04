@@ -110,20 +110,7 @@ class HAS(SETS):
 
     def __init__(self, left=None, right=None, jsonify=False, **kwargs):
 
-        self.expression = self.CONTAINS(left, right, jsonify, **kwargs)
-
-
-class NOTHAS(SETS):
-    """
-    For if the left doesn't all the members of right
-    """
-
-    NOT = relations_sql.NOT
-    HAS = HAS
-
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
-
-        self.expression = self.NOT(self.HAS(left, right, jsonify=jsonify, **kwargs))
+        self.expression = self.CONTAINS(left, right, jsonify=jsonify, **kwargs)
 
 
 class ANY(SETS):
@@ -150,19 +137,6 @@ class ANY(SETS):
         self.expression = self.OR([self.CONTAINS(left, self.VALUE([value])) for value in right])
 
 
-class NOTANY(ANY):
-    """
-    For if the left doesn't have any the members of right
-    """
-
-    NOT = relations_sql.NOT
-    ANY = ANY
-
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
-
-        self.expression = self.NOT(self.ANY(left, right, jsonify=jsonify, **kwargs))
-
-
 class ALL(SETS):
     """
     For if the left and right have the same members
@@ -177,48 +151,32 @@ class ALL(SETS):
         self.expression = self.AND(self.CONTAINS(left, right, jsonify, **kwargs), self.LENGTHS(left, right, jsonify, **kwargs))
 
 
-class NOTALL(ALL):
-    """
-    For if the left and right don't have the same members
-    """
-
-    NOT = relations_sql.NOT
-    ALL = ALL
-
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
-
-        self.expression = self.NOT(self.ALL(left, right, jsonify=jsonify, **kwargs))
-
-
 class OP:
     """
     Determines the criterion based on operand
     """
 
+    NOT = relations_sql.NOT
+
     CRITERIONS = {
         'null': relations_sql.NULL,
         'eq': relations_sql.EQ,
-        'ne': relations_sql.NE,
         'gt': relations_sql.GT,
         'gte': relations_sql.GTE,
         'lt': relations_sql.LT,
         'lte': relations_sql.LTE,
         'like': relations_sql.LIKE,
-        'notlike': relations_sql.NOTLIKE,
         'in': relations_sql.IN,
-        'notin': relations_sql.NOTIN,
         'has': HAS,
-        'nothas': NOTHAS,
         'any': ANY,
-        'notany': NOTANY,
-        'all': ALL,
-        'notall': NOTALL
+        'all': ALL
     }
 
     def __new__(cls, *args, **kwargs):
 
         field = None
         value = None
+        invert = kwargs.pop("INVERT", False)
         jsonify = kwargs.pop("JSONIFY", False)
         extracted = kwargs.pop("EXTRACTED", False)
 
@@ -235,5 +193,14 @@ class OP:
             pieces = field.rsplit('__', 1)
             if pieces[-1] in cls.CRITERIONS:
                 field, operand = pieces
+            elif pieces[-1].startswith('not_'):
+                operands = pieces[-1].split('not_', 1)
+                if operands[-1] in cls.CRITERIONS:
+                    invert = True
+                    field = pieces[0]
+                    operand = operands[-1]
 
-        return cls.CRITERIONS[operand](field, value, jsonify=jsonify, extracted=extracted)
+        if invert and cls.CRITERIONS[operand].INVERT is None:
+            return cls.NOT(cls.CRITERIONS[operand](field, value, jsonify=jsonify, extracted=extracted))
+
+        return cls.CRITERIONS[operand](field, value, invert=invert, jsonify=jsonify, extracted=extracted)

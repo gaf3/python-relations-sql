@@ -45,7 +45,7 @@ query.generate()
 self.assertEqual(query.sql,
     "SELECT * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
     "AS `people` WHERE `stuff` IN "
-    "(SELECT `f` FROM `g` WHERE `things`>%s>JSON(%s))"
+    "(SELECT `f` FROM `g` WHERE `things`#>>%s>JSON(%s))"
 )
 self.assertEqual(query.args, ['$."a"[0][-1]."2"."-3"', '5'])
 
@@ -55,7 +55,7 @@ query.generate()
 self.assertEqual(query.sql,
     "SELECT * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
     "AS `people` WHERE `stuff` IN "
-    "(SELECT `f` FROM `g` WHERE `things`>%s>JSON(%s)) "
+    "(SELECT `f` FROM `g` WHERE `things`#>>%s>JSON(%s)) "
     "GROUP BY `fee`,`fie` HAVING `foe`=%s "
     "ORDER BY `yin`,`yang` DESC LIMIT %s,%s"
 )

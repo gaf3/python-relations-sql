@@ -10,7 +10,7 @@ class SQL:
     SEPARATOR = '.'
     PLACEHOLDER = "%s"
     JSONIFY = "JSON(%s)"
-    PATH = "%s>%s"
+    PATH = "%s#>>%s"
 
 
 class TestSQLError(unittest.TestCase):

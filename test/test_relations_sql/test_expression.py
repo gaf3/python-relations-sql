@@ -469,14 +469,14 @@ class TestFIELD(unittest.TestCase):
 
         expression = FIELD("people.stuff.things__a__0___1____2_____3", table=table)
         expression.generate()
-        self.assertEqual(expression.sql, "test.`things`>%s")
+        self.assertEqual(expression.sql, "test.`things`#>>%s")
         self.assertEqual(expression.args, ["unit", '$."a"[0][-1]."2"."-3"'])
 
         schema = relations_sql.SQL("unit", ["test"])
 
         expression = FIELD("people.stuff.things__a__0___1____2_____3", schema=schema)
         expression.generate()
-        self.assertEqual(expression.sql, "unit.`stuff`.`things`>%s")
+        self.assertEqual(expression.sql, "unit.`stuff`.`things`#>>%s")
         self.assertEqual(expression.args, ["test", '$."a"[0][-1]."2"."-3"'])
 
 
