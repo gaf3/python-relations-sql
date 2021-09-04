@@ -328,7 +328,6 @@ class OP(test_criterion.SQL, relations_sql.OP):
         'lte': test_criterion.LTE,
         'like': test_criterion.LIKE,
         'start': test_criterion.START,
-        'mid': test_criterion.MID,
         'end': test_criterion.END,
         'in': test_criterion.IN,
         "has": HAS,
