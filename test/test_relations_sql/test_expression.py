@@ -410,7 +410,7 @@ class TestFIELD(unittest.TestCase):
         self.assertEqual(expression.path, [])
         self.assertFalse(expression.jsonify)
 
-    def test___call__(self):
+    def test_set(self):
 
         expression = FIELD('a')
         expression.set("people.stuff.things", jsonify=True)

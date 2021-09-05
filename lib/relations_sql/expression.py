@@ -5,6 +5,7 @@ Module for all Relations SQL Expressions. pieces of criterions, criteria, and st
 import json
 import collections.abc
 
+import relations
 import relations_sql
 
 
@@ -267,44 +268,9 @@ class FIELD(TABLE):
         Splits field value into name and path
         """
 
-        name = None
-        count = 0
-        place = []
-        places = []
+        path = relations.Field.split(field)
 
-        for letter in field:
-
-            if letter == '_':
-                count += 1
-            else:
-                count = 0
-
-            if count == 2 and letter == '_':
-                places.append(''.join(place[:-1]))
-                place = []
-                continue
-
-            if letter != '_' or count != 2:
-                place.append(letter)
-
-        if place:
-            places.append(''.join(place))
-
-        name = places.pop(0)
-
-        path = []
-
-        for place in places:
-            if place[0] != '_' and ('0' > place[0] or place[0] > '9'):
-                path.append(place)
-            elif '0' <= place[0] and place[0] <= '9':
-                path.append(int(place))
-            elif place[:1] == '_' and '0' <= place[1] and place[1] <= '9':
-                path.append(-int(place[1:]))
-            elif place[:2] == '__' and '0' <= place[2] and place[2] <= '9':
-                path.append(place[2:])
-            elif place[:3] == '___' and '0' <= place[3] and place[3] <= '9':
-                path.append(str(-int(place[3:])))
+        name = path.pop(0)
 
         return name, path
 
