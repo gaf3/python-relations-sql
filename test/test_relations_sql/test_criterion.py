@@ -323,14 +323,6 @@ class TestIN(unittest.TestCase):
         self.assertEqual(criterion.sql, "`totes` IN (%s,%s)")
         self.assertEqual(criterion.args, ["mai", "goats"])
 
-    def test_generate(self):
-
-        criterion = IN("totes", ["mai", "goats"])
-
-        criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` IN (%s,%s)")
-        self.assertEqual(criterion.args, ["mai", "goats"])
-
         criterion = IN("totes", ["mai", "goats"], invert=True)
 
         criterion.generate()

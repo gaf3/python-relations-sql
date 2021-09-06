@@ -146,16 +146,22 @@ class INSERT(QUERY):
         ("SELECT", SELECT)
     ])
 
-    def __init__(self, table, *args, **kwargs):
+    def __init__(self, table, *args, **kwargs): # pylint: disable=too-many-branches
 
         self.check(kwargs)
 
         for clause in self.CLAUSES:
             if clause == "TABLE":
-                self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+                if isinstance(table, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = table
+                else:
+                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
             elif clause == "FIELDS":
                 if "FIELDS" in kwargs:
-                    self.clauses[clause] = self.CLAUSES[clause](kwargs["FIELDS"])
+                    if isinstance(kwargs["FIELDS"], self.CLAUSES["FIELDS"]):
+                        self.clauses[clause] = kwargs["FIELDS"]
+                    else:
+                        self.clauses[clause] = self.CLAUSES[clause](kwargs["FIELDS"])
                 else:
                     self.clauses[clause] = self.CLAUSES[clause](args)
             else:
@@ -205,7 +211,10 @@ class LIMITED(QUERY):
 
         for clause in self.CLAUSES:
             if clause == "TABLE":
-                self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+                if isinstance(table, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = table
+                else:
+                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
             else:
                 if clause in kwargs:
                     if isinstance(kwargs[clause], self.CLAUSES[clause]):
