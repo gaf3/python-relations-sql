@@ -5,6 +5,7 @@ import test_expression
 import test_criterion
 import test_clause
 
+import copy
 import collections
 
 import relations_sql
@@ -83,6 +84,21 @@ class TestQUERY(unittest.TestCase):
         self.assertEqual(query.sql, "QUERY `people`.`stuff` FROM `things`")
         self.assertEqual(query.args, [])
 
+    def test_copy(self):
+
+        query = QUERY(SELECT="people.stuff", FROM="things")
+        clone = copy.deepcopy(query)
+
+        query.generate()
+        self.assertEqual(query.sql, "QUERY `people`.`stuff` FROM `things`")
+        self.assertEqual(query.args, [])
+
+        self.assertIsNone(clone.sql)
+        self.assertIsNone(clone.args)
+        self.assertIsNone(clone.clauses["SELECT"].sql)
+        self.assertIsNone(clone.clauses["SELECT"].args)
+        self.assertIsNone(clone.clauses["FROM"].sql)
+        self.assertIsNone(clone.clauses["FROM"].args)
 
 ASC = test_expression.ASC
 DESC = test_expression.DESC
@@ -189,6 +205,15 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
         self.assertEqual(query.FIELDS.expressions[0].name, "things")
+        self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "stuff")
+
+        table = test_expression.TABLE("people.stuff")
+        fields = test_expression.NAMES(["things"])
+        query = INSERT(table, FIELDS=fields, SELECT=SELECT("stuff").FROM("things"))
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.FIELDS.expressions[0].name, "things")
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for INSERT", INSERT, "table", nope=False)
 
@@ -258,6 +283,12 @@ class TestLIMITED(unittest.TestCase):
         self.assertEqual(query.TABLE.name, "people")
 
         query = LIMITED("people")
+
+        self.assertEqual(query.SELECT.expressions, [])
+        self.assertEqual(query.TABLE.name, "people")
+
+        table = test_expression.TABLE("people")
+        query = LIMITED(table)
 
         self.assertEqual(query.SELECT.expressions, [])
         self.assertEqual(query.TABLE.name, "people")
