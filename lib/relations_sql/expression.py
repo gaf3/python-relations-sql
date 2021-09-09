@@ -87,7 +87,7 @@ class NOT(EXPRESSION):
 
         self.args = []
 
-        self.express(self.expression, [], indent=indent, count=count+1, **kwargs)
+        self.express(self.expression, [], indent=indent, count=count+1, pad=pad, **kwargs)
         self.sql = f"NOT {self.expression.sql}"
 
 
