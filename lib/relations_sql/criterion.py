@@ -2,6 +2,8 @@
 Module for all Relations SQL Criterions, pieces of Criteria
 """
 
+# pylint: disable=isinstance-second-argument-not-valid-type
+
 import relations_sql
 
 class CRITERION(relations_sql.EXPRESSION):
@@ -44,7 +46,7 @@ class CRITERION(relations_sql.EXPRESSION):
 
         return len(self.left) + len(self.right)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
         Generate the left and right with operand in between
         """
@@ -52,10 +54,17 @@ class CRITERION(relations_sql.EXPRESSION):
         sql = []
         self.args = []
 
-        self.express(self.left, sql)
-        self.express(self.right, sql, parentheses=isinstance(self.right, relations_sql.SELECT) or self.PARENTHESES)
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+        line = "\n" if indent else ''
+        left, right = ('', '') if isinstance(self.right, self.RIGHT) and not self.PARENTHESES else (f"({line}{next}", f"{line}{current})")
 
-        self.sql = self.INVERT % tuple(sql) if self.invert else self.OPERAND % tuple(sql)
+        self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
+        self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+
+        operand = self.INVERT if self.invert else self.OPERAND
+
+        self.sql = operand % (sql[0], f"{left}{sql[1]}{right}")
 
 
 class NULL(CRITERION):
@@ -70,12 +79,12 @@ class NULL(CRITERION):
 
         return 1
 
-    def generate(self):
+    def generate(self, **kwargs):
 
         sql = []
         self.args = []
 
-        self.express(self.left, sql)
+        self.express(self.left, sql, **kwargs)
 
         OPERAND = self.INVERT if bool(self.right.value) == bool(self.invert) else self.OPERAND
 
@@ -169,23 +178,24 @@ class IN(CRITERION):
     RIGHT = relations_sql.LIST
     VALUE = relations_sql.VALUE
 
-    OPERAND = "%s IN %s"
-    INVERT = "%s NOT IN %s"
     PARENTHESES = True
 
-    def generate(self):
+    OPERAND = "%s IN %s"
+    INVERT = "%s NOT IN %s"
+
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
         Generate the left and right with operand in between
         """
 
         if self.right:
 
-            super().generate()
+            super().generate(indent=indent, count=count, pad=pad, **kwargs)
 
         else:
 
             value = self.VALUE(self.invert)
-            value.generate()
+            value.generate(indent=indent, count=count, pad=pad, **kwargs)
             self.sql = value.sql
             self.args = value.args
 

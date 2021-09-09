@@ -46,18 +46,25 @@ class CRITERIA(relations_sql.LIST):
             else:
                 self.expressions.append(self.ARGS(expression))
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
         Concats the values
         """
+
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+
+        line = "\n" if indent else ''
+        delimitter = f"{self.DELIMITTER.rstrip()}{line}{next}" if indent else self.DELIMITTER
+        left, right = (f"({line}{next}", f"{line}{current})") if self.PARENTHESES else ('', '')
 
         sql = []
         self.sql = ""
         self.args = []
 
         if self:
-            self.express(self.expressions, sql)
-            self.sql = f"({self.DELIMITTER.join(sql)})" if self.PARENTHESES else self.DELIMITTER.join(sql)
+            self.express(self.expressions, sql, indent=indent, count=count+1, pad=' ', **kwargs)
+            self.sql = f"{left}{delimitter.join(sql)}{right}"
 
 
 class AND(CRITERIA):
@@ -87,12 +94,12 @@ class SETS(relations_sql.CRITERION):
 
     expression = None
 
-    def generate(self):
+    def generate(self, **kwargs):
         """
         Concats the values
         """
 
-        self.expression.generate()
+        self.expression.generate(**kwargs)
         self.sql = self.expression.sql
         self.args = self.expression.args
 

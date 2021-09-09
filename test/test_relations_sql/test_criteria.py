@@ -129,6 +129,63 @@ class TestCRITERIA(unittest.TestCase):
         self.assertEqual(criteria.sql, "(`totes`=%s LOGIC `toast`!=%s)")
         self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
+        criteria.generate(indent=2)
+        self.assertEqual(criteria.sql, """(
+  `totes`=%s LOGIC
+  `toast`!=%s
+)""")
+
+        criteria.generate(indent=2, count=1)
+        self.assertEqual(criteria.sql, """(
+    `totes`=%s LOGIC
+    `toast`!=%s
+  )""")
+
+        criteria.generate(indent=2, count=2)
+        self.assertEqual(criteria.sql, """(
+      `totes`=%s LOGIC
+      `toast`!=%s
+    )""")
+
+        criteria = LOGIC()
+        criteria(LOGIC(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True)))
+        criteria(LOGIC(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True)))
+
+        criteria.generate(indent=2)
+        self.assertEqual(criteria.sql, """(
+  (
+    `totes`=%s LOGIC
+    `toast`!=%s
+  ) LOGIC
+  (
+    `totes`=%s LOGIC
+    `toast`!=%s
+  )
+)""")
+
+        criteria.generate(indent=2, count=1)
+        self.assertEqual(criteria.sql, """(
+    (
+      `totes`=%s LOGIC
+      `toast`!=%s
+    ) LOGIC
+    (
+      `totes`=%s LOGIC
+      `toast`!=%s
+    )
+  )""")
+
+        criteria.generate(indent=2, count=2)
+        self.assertEqual(criteria.sql, """(
+      (
+        `totes`=%s LOGIC
+        `toast`!=%s
+      ) LOGIC
+      (
+        `totes`=%s LOGIC
+        `toast`!=%s
+      )
+    )""")
 
 class AND(relations_sql.AND):
 
@@ -145,6 +202,24 @@ class TestAND(unittest.TestCase):
         self.assertEqual(criteria.sql, "(`totes`=%s AND `toast`!=%s)")
         self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
+        criteria.generate(indent=2)
+        self.assertEqual(criteria.sql, """(
+  `totes`=%s AND
+  `toast`!=%s
+)""")
+
+        criteria.generate(indent=2, count=1)
+        self.assertEqual(criteria.sql, """(
+    `totes`=%s AND
+    `toast`!=%s
+  )""")
+
+        criteria.generate(indent=2, count=2)
+        self.assertEqual(criteria.sql, """(
+      `totes`=%s AND
+      `toast`!=%s
+    )""")
+
 
 class OR(relations_sql.OR):
 
@@ -160,6 +235,24 @@ class TestOR(unittest.TestCase):
         criteria.generate()
         self.assertEqual(criteria.sql, "(`totes`=%s OR `toast`!=%s)")
         self.assertEqual(criteria.args, ["maigoats", "myghost"])
+
+        criteria.generate(indent=2)
+        self.assertEqual(criteria.sql, """(
+  `totes`=%s OR
+  `toast`!=%s
+)""")
+
+        criteria.generate(indent=2, count=1)
+        self.assertEqual(criteria.sql, """(
+    `totes`=%s OR
+    `toast`!=%s
+  )""")
+
+        criteria.generate(indent=2, count=2)
+        self.assertEqual(criteria.sql, """(
+      `totes`=%s OR
+      `toast`!=%s
+    )""")
 
 
 class SETS(test_criterion.SQL, relations_sql.SETS):

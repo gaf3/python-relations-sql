@@ -55,15 +55,21 @@ class CLAUSE(relations_sql.CRITERIA):
         self.statement = statement
         return self
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
         Concats the values
         """
 
-        super().generate()
+        super().generate(indent=indent, count=count, pad=pad, **kwargs)
 
-        if self.NAME is not None:
-            self.sql = f"{self.NAME} {self.sql}"
+        if self.sql:
+
+            one = pad * indent
+            current = pad * (count * indent)
+            next = current + one
+            line = "\n" if indent else ' '
+
+            self.sql = f"{self.NAME}{line}{next}{self.sql}" if self.NAME else f"{one}{self.sql}"
 
 
 class ARGS(CLAUSE):
@@ -88,9 +94,9 @@ class OPTIONS(ARGS):
     DELIMITTER = ' '
 
 
-class FIELDS(CLAUSE):
+class RESULTS(CLAUSE):
     """
-    FIELDS part of SELECT statement
+    RESULTS part of SELECT statement
     """
 
     ARGS = relations_sql.FIELD
@@ -216,7 +222,7 @@ class VALUES(CLAUSE):
 
     ARGS = relations_sql.LIST
 
-    DELIMITTER = "),("
+    DELIMITTER = None
 
     fields = None
 
@@ -262,14 +268,20 @@ class VALUES(CLAUSE):
 
         return self.statement or self
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
         Concats the values
         """
 
         sql = []
-        self.sql = ""
         self.args = []
 
-        self.express(self.expressions, sql, parentheses=True)
-        self.sql = f"{self.NAME} ({self.DELIMITTER.join(sql)})"
+        count += 1
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+        line = "\n" if indent else ' '
+        left, right = (f"(\n{next}", f"\n{current})") if indent else ('(', ')')
+        delimitter = f"{right},{left}"
+
+        self.express(self.expressions, sql, indent=indent, count=count+1, pad=pad, **kwargs)
+        self.sql = f"{self.NAME}{line}{current}{left}{delimitter.join(sql)}{right}"

@@ -97,6 +97,33 @@ class TestCRITERION(unittest.TestCase):
         self.assertEqual(criterion.sql, "`totes`#>>%s CRIERION JSON(%s)")
         self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
 
+        criterion = CRITERION(totes=test_expression.LIST([1, 2, 3]))
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, "`totes` CRIERION (%s,%s,%s)")
+        self.assertEqual(criterion.args, [1, 2, 3])
+
+        criterion.generate(indent=2)
+        self.assertEqual(criterion.sql, """`totes` CRIERION (
+  %s,
+  %s,
+  %s
+)""")
+
+        criterion.generate(indent=2, count=1)
+        self.assertEqual(criterion.sql, """`totes` CRIERION (
+    %s,
+    %s,
+    %s
+  )""")
+
+        criterion.generate(indent=2, count=2)
+        self.assertEqual(criterion.sql, """`totes` CRIERION (
+      %s,
+      %s,
+      %s
+    )""")
+
 
 class NULL(SQL, relations_sql.NULL):
     pass
@@ -344,7 +371,7 @@ class TestIN(unittest.TestCase):
 
 class CONTAINS(SQL, relations_sql.CONTAINS):
 
-    OPERAND = "CONTAINS(%s,%s)"
+    pass
 
 class TestCONTAINS(unittest.TestCase):
 
@@ -359,7 +386,7 @@ class TestCONTAINS(unittest.TestCase):
 
 class LENGTHS(SQL, relations_sql.LENGTHS):
 
-    OPERAND = "LENGTHS(%s,%s)"
+    pass
 
 class TestLENGTHS(unittest.TestCase):
 

@@ -83,6 +83,21 @@ class TestCLAUSE(unittest.TestCase):
         self.assertEqual(clause.sql, "people,stuff,things")
         self.assertEqual(clause.args, [])
 
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """  people,
+  stuff,
+  things""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """  people,
+    stuff,
+    things""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """  people,
+      stuff,
+      things""")
+
         clause = KNOWN()
 
         self.assertFalse(clause)
@@ -91,6 +106,59 @@ class TestCLAUSE(unittest.TestCase):
         clause.generate()
         self.assertEqual(clause.sql, "CLAUSE `people`,`things` AS `stuff`")
         self.assertEqual(clause.args, [])
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """CLAUSE
+  `people`,
+  `things` AS `stuff`""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """CLAUSE
+    `people`,
+    `things` AS `stuff`""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """CLAUSE
+      `people`,
+      `things` AS `stuff`""")
+
+        clause = KNOWN()
+        clause(test_criteria.LOGIC(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True)))
+        clause(test_criteria.LOGIC(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True)))
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """CLAUSE
+  (
+    `totes`=%s LOGIC
+    `toast`!=%s
+  ),
+  (
+    `totes`=%s LOGIC
+    `toast`!=%s
+  )""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """CLAUSE
+    (
+      `totes`=%s LOGIC
+      `toast`!=%s
+    ),
+    (
+      `totes`=%s LOGIC
+      `toast`!=%s
+    )""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """CLAUSE
+      (
+        `totes`=%s LOGIC
+        `toast`!=%s
+      ),
+      (
+        `totes`=%s LOGIC
+        `toast`!=%s
+      )""")
+
 
 class ARGS(relations_sql.ARGS):
 
@@ -147,32 +215,47 @@ class TestOPTIONS(unittest.TestCase):
         self.assertEqual(clause.sql, "people stuff things")
         self.assertEqual(clause.args, [])
 
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """  people
+  stuff
+  things""")
 
-class FIELDS(relations_sql.FIELDS):
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """  people
+    stuff
+    things""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """  people
+      stuff
+      things""")
+
+
+class RESULTS(relations_sql.RESULTS):
 
     ARGS = test_expression.FIELD
     KWARG = test_expression.FIELD
     KWARGS = test_expression.AS
 
-class TestFIELDS(unittest.TestCase):
+class TestRESULTS(unittest.TestCase):
 
     maxDiff = None
 
     def test___init__(self):
 
-        clause = FIELDS("*")
+        clause = RESULTS("*")
 
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.FIELD)
         self.assertEqual(clause.expressions[0].name, "*")
 
-        clause = FIELDS("people.stuff.things")
+        clause = RESULTS("people.stuff.things")
 
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.FIELD)
         self.assertEqual(clause.expressions[0].name, "things")
 
-        clause = FIELDS(stuff="things")
+        clause = RESULTS(stuff="things")
 
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.AS)
@@ -183,7 +266,7 @@ class TestFIELDS(unittest.TestCase):
 
     def test_generate(self):
 
-        clause = FIELDS()
+        clause = RESULTS()
 
         self.assertFalse(clause)
 
@@ -196,6 +279,18 @@ class TestFIELDS(unittest.TestCase):
         clause.generate()
         self.assertEqual(clause.sql, "*,`things` AS `stuff`")
         self.assertEqual(clause.args, [])
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """  *,
+  `things` AS `stuff`""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """  *,
+    `things` AS `stuff`""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """  *,
+      `things` AS `stuff`""")
 
 
 class FROM(relations_sql.FROM):
@@ -233,6 +328,21 @@ class TestFROM(unittest.TestCase):
         self.assertEqual(clause.sql, "FROM `people`,`things` AS `stuff`")
         self.assertEqual(clause.args, [])
 
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """FROM
+  `people`,
+  `things` AS `stuff`""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """FROM
+    `people`,
+    `things` AS `stuff`""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """FROM
+      `people`,
+      `things` AS `stuff`""")
+
 
 class WHERE(relations_sql.WHERE):
 
@@ -268,6 +378,21 @@ class TestWHERE(unittest.TestCase):
         self.assertEqual(clause.sql, "WHERE %s AND `stuff`=%s")
         self.assertEqual(clause.args, ["people", "things"])
 
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """WHERE
+  %s AND
+  `stuff`=%s""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """WHERE
+    %s AND
+    `stuff`=%s""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """WHERE
+      %s AND
+      `stuff`=%s""")
+
 
 class GROUP_BY(relations_sql.GROUP_BY):
 
@@ -299,6 +424,24 @@ class TestGROUP_BY(unittest.TestCase):
         clause.generate()
         self.assertEqual(clause.sql, "GROUP BY `people`,`stuff`,`things`")
         self.assertEqual(clause.args, [])
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """GROUP BY
+  `people`,
+  `stuff`,
+  `things`""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """GROUP BY
+    `people`,
+    `stuff`,
+    `things`""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """GROUP BY
+      `people`,
+      `stuff`,
+      `things`""")
 
 
 class HAVING(relations_sql.HAVING):
@@ -334,6 +477,22 @@ class TestHAVING(unittest.TestCase):
         clause.generate()
         self.assertEqual(clause.sql, "HAVING %s AND `stuff`=%s")
         self.assertEqual(clause.args, ["people", "things"])
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """HAVING
+  %s AND
+  `stuff`=%s""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """HAVING
+    %s AND
+    `stuff`=%s""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """HAVING
+      %s AND
+      `stuff`=%s""")
+
 
 ASC = test_expression.ASC
 DESC = test_expression.DESC
@@ -373,6 +532,23 @@ class TestORDER_BY(unittest.TestCase):
         self.assertEqual(clause.sql, "ORDER BY `people`,`stuff` ASC,`things` DESC")
         self.assertEqual(clause.args, [])
 
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """ORDER BY
+  `people`,
+  `stuff` ASC,
+  `things` DESC""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """ORDER BY
+    `people`,
+    `stuff` ASC,
+    `things` DESC""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """ORDER BY
+      `people`,
+      `stuff` ASC,
+      `things` DESC""")
 
 class LIMIT(relations_sql.LIMIT):
 
@@ -433,6 +609,21 @@ class TestLIMIT(unittest.TestCase):
         self.assertEqual(clause.sql, "LIMIT %s,%s")
         self.assertEqual(clause.args, [10, 5])
 
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """LIMIT
+  %s,
+  %s""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """LIMIT
+    %s,
+    %s""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """LIMIT
+      %s,
+      %s""")
+
 
 class SET(relations_sql.SET):
 
@@ -464,6 +655,21 @@ class TestSET(unittest.TestCase):
         clause.generate()
         self.assertEqual(clause.sql, "SET `fee`=%s,`foe`=%s")
         self.assertEqual(clause.args, ["fie", "fum"])
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """SET
+  `fee`=%s,
+  `foe`=%s""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """SET
+    `fee`=%s,
+    `foe`=%s""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """SET
+      `fee`=%s,
+      `foe`=%s""")
 
 
 class VALUES(relations_sql.VALUES):
@@ -542,3 +748,35 @@ class TestVALUES(unittest.TestCase):
         clause.generate()
         self.assertEqual(clause.sql, "VALUES (%s,%s)")
         self.assertEqual(clause.args, ["fie", "fum"])
+
+        clause(fee="fie", foe="fum")
+
+        clause.generate(indent=2)
+        self.assertEqual(clause.sql, """VALUES
+  (
+    %s,
+    %s
+  ),(
+    %s,
+    %s
+  )""")
+
+        clause.generate(indent=2, count=1)
+        self.assertEqual(clause.sql, """VALUES
+    (
+      %s,
+      %s
+    ),(
+      %s,
+      %s
+    )""")
+
+        clause.generate(indent=2, count=2)
+        self.assertEqual(clause.sql, """VALUES
+      (
+        %s,
+        %s
+      ),(
+        %s,
+        %s
+      )""")

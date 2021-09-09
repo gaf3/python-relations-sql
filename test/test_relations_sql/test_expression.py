@@ -111,6 +111,9 @@ class TestNOT(unittest.TestCase):
         self.assertEqual(expression.sql, "NOT test")
         self.assertEqual(expression.args, [])
 
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, "NOT test")
+
 
 class LIST(test_sql.SQL, relations_sql.LIST):
 
@@ -170,6 +173,18 @@ class TestLIST(unittest.TestCase):
         expression.generate()
         self.assertEqual(expression.sql, "JSON(%s),JSON(%s)")
         self.assertEqual(expression.args, ['{"a": 1}', '{"b": 2}'])
+
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, """JSON(%s),
+JSON(%s)""")
+
+        expression.generate(indent=2, count=1)
+        self.assertEqual(expression.sql, """JSON(%s),
+  JSON(%s)""")
+
+        expression.generate(indent=2, count=2)
+        self.assertEqual(expression.sql, """JSON(%s),
+    JSON(%s)""")
 
 
 class NAME(test_sql.SQL, relations_sql.NAME):
@@ -329,6 +344,31 @@ class TestTABLE(unittest.TestCase):
         expression.generate()
         self.assertEqual(expression.sql, "unit.`stuff`")
         self.assertEqual(expression.args, ["test"])
+
+        expression = TABLE("people.stuff", prefix="PRE")
+
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, """PRE
+  `people`.`stuff`""")
+
+        expression.generate(indent=2, count=1)
+        self.assertEqual(expression.sql, """PRE
+    `people`.`stuff`""")
+
+        expression.generate(indent=2, count=2)
+        self.assertEqual(expression.sql, """PRE
+      `people`.`stuff`""")
+
+        expression = TABLE("people.stuff", prefix="")
+
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, """  `people`.`stuff`""")
+
+        expression.generate(indent=2, count=1)
+        self.assertEqual(expression.sql, """  `people`.`stuff`""")
+
+        expression.generate(indent=2, count=2)
+        self.assertEqual(expression.sql, """  `people`.`stuff`""")
 
 
 class FIELD(test_sql.SQL, relations_sql.FIELD):
@@ -504,6 +544,48 @@ class TestNAMES(unittest.TestCase):
         self.assertEqual(expression.args, [])
 
 
+class FIELDS(test_sql.SQL, relations_sql.FIELDS):
+
+    ARG = NAME
+
+class TestFIELDS(unittest.TestCase):
+
+    maxDiff = None
+
+    def test___init__(self):
+
+        expression = FIELDS(["unit", relations_sql.SQL("test")])
+        self.assertIsInstance(expression.expressions[0], NAME)
+        self.assertEqual(expression.expressions[0].name, "unit")
+        self.assertIsInstance(expression.expressions[1], relations_sql.SQL)
+        self.assertEqual(expression.expressions[1].sql, "test")
+
+    def test_generate(self):
+
+        expression = FIELDS(["unit", relations_sql.SQL("test")])
+        expression.generate()
+        self.assertEqual(expression.sql, "(`unit`,test)")
+        self.assertEqual(expression.args, [])
+
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, """  (
+    `unit`,
+    test
+  )""")
+
+        expression.generate(indent=2, count=1)
+        self.assertEqual(expression.sql, """  (
+      `unit`,
+      test
+    )""")
+
+        expression.generate(indent=2, count=2)
+        self.assertEqual(expression.sql, """  (
+        `unit`,
+        test
+      )""")
+
+
 class AS(test_sql.SQL, relations_sql.AS):
 
     NAME = NAME
@@ -549,6 +631,10 @@ class TestAS(unittest.TestCase):
         expression.generate()
         self.assertEqual(expression.sql, "test AS unit")
         self.assertEqual(expression.args, ["unit", "test"])
+
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, """test AS unit""")
+
 
 ASC = relations_sql.ASC
 DESC = relations_sql.DESC
@@ -665,3 +751,6 @@ class TestASSIGN(unittest.TestCase):
         expression.generate()
         self.assertEqual(expression.sql, "unit=test")
         self.assertEqual(expression.args, ["test", "unit"])
+
+        expression.generate(indent=2)
+        self.assertEqual(expression.sql, """unit=test""")
