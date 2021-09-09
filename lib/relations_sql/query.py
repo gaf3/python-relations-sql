@@ -86,7 +86,7 @@ class QUERY(relations_sql.EXPRESSION):
         self.model = model
         return self
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
         Generate the sql and args
         """
@@ -94,8 +94,12 @@ class QUERY(relations_sql.EXPRESSION):
         sql = []
         self.args = []
 
-        self.express(self.clauses.values(), sql)
-        self.sql = f"{self.NAME} {' '.join(sql)}"
+        current = pad * (count * indent)
+        line = "\n" if indent else ' '
+        delimitter = f"{line}{current}"
+
+        self.express(self.clauses.values(), sql, indent=indent, count=count, pad=" ", **kwargs)
+        self.sql = f"{self.NAME}{line}{current}{delimitter.join(sql)}"
 
 
 class SELECT(QUERY):
@@ -107,7 +111,7 @@ class SELECT(QUERY):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("FIELDS", relations_sql.FIELDS),
+        ("RESULTS", relations_sql.RESULTS),
         ("FROM", relations_sql.FROM),
         ("WHERE", relations_sql.WHERE),
         ("GROUP_BY", relations_sql.GROUP_BY),
@@ -116,18 +120,16 @@ class SELECT(QUERY):
         ("LIMIT", relations_sql.LIMIT)
     ])
 
-    parentheses = False
-
     def __init__(self, *args, **kwargs):
 
         super().__init__(*kwargs)
-        self.FIELDS(*args)
+        self.RESULTS(*args)
 
     def __call__(self, *args, **kwargs):
         """
         Shorthand for FIELDS
         """
-        return self.FIELDS(*args, **kwargs)
+        return self.RESULTS(*args, **kwargs)
 
 
 class INSERT(QUERY):
@@ -141,7 +143,7 @@ class INSERT(QUERY):
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
         ("TABLE", relations_sql.TABLE),
-        ("FIELDS", relations_sql.NAMES),
+        ("FIELDS", relations_sql.FIELDS),
         ("VALUES", relations_sql.VALUES),
         ("SELECT", SELECT)
     ])
@@ -183,7 +185,7 @@ class INSERT(QUERY):
 
         self.FIELDS = self.CLAUSES["FIELDS"](fields)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
         Generate the sql and args
         """
@@ -191,13 +193,7 @@ class INSERT(QUERY):
         if self.VALUES and self.SELECT:
             raise relations_sql.SQLError(self, "set VALUES or SELECT but not both")
 
-        sql = []
-        self.args = []
-
-        for clause in self.CLAUSES:
-            self.express(self.clauses[clause], sql, parentheses=(clause == "FIELDS"))
-
-        self.sql = f"{self.NAME} {' '.join(sql)}"
+        super().generate(indent=indent, count=count, pad=pad, **kwargs)
 
 
 class LIMITED(QUERY):
@@ -224,7 +220,7 @@ class LIMITED(QUERY):
                 else:
                     self.clauses[clause] = self.CLAUSES[clause]().bind(self)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
         Generate the sql and args
         """
@@ -232,7 +228,7 @@ class LIMITED(QUERY):
         if len(self.LIMIT) > 1:
             raise relations_sql.SQLError(self, "LIMIT can only be total")
 
-        super().generate()
+        super().generate(indent=indent, count=count, pad=pad, **kwargs)
 
 
 class UPDATE(LIMITED):
@@ -241,6 +237,7 @@ class UPDATE(LIMITED):
     """
 
     NAME = "UPDATE"
+    PREFIX = ""
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),

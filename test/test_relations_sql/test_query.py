@@ -16,7 +16,7 @@ class QUERY(relations_sql.QUERY):
     NAME = "QUERY"
 
     CLAUSES = collections.OrderedDict([
-        ("SELECT", test_clause.FIELDS),
+        ("SELECT", test_clause.RESULTS),
         ("FROM", test_clause.FROM)
     ])
 
@@ -84,6 +84,25 @@ class TestQUERY(unittest.TestCase):
         self.assertEqual(query.sql, "QUERY `people`.`stuff` FROM `things`")
         self.assertEqual(query.args, [])
 
+        query.generate(indent=2)
+        self.assertEqual(query.sql, """QUERY
+  `people`.`stuff`
+FROM
+  `things`""")
+
+        query.generate(indent=2, count=1)
+        self.assertEqual(query.sql, """QUERY
+    `people`.`stuff`
+  FROM
+    `things`""")
+
+        query.generate(indent=2, count=2)
+        self.assertEqual(query.sql, """QUERY
+      `people`.`stuff`
+    FROM
+      `things`""")
+
+
     def test_copy(self):
 
         query = QUERY(SELECT="people.stuff", FROM="things")
@@ -107,7 +126,7 @@ class SELECT(relations_sql.SELECT):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("FIELDS", test_clause.FIELDS),
+        ("RESULTS", test_clause.RESULTS),
         ("FROM", test_clause.FROM),
         ("WHERE", test_clause.WHERE),
         ("GROUP_BY", test_clause.GROUP_BY),
@@ -124,7 +143,7 @@ class TestSELECT(unittest.TestCase):
 
         query = SELECT("*").FROM("people").WHERE(stuff__gt="things")
 
-        self.assertEqual(query.FIELDS.expressions[0].name, "*")
+        self.assertEqual(query.RESULTS.expressions[0].name, "*")
         self.assertEqual(query.FROM.expressions[0].name, "people")
         self.assertIsInstance(query.WHERE.expressions[0], test_criterion.GT)
         self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
@@ -140,6 +159,8 @@ class TestSELECT(unittest.TestCase):
 
         query = SELECT(
             "*"
+        ).OPTIONS(
+            "FAST"
         ).FROM(
             people=SELECT(
                 "a.b.c"
@@ -158,7 +179,7 @@ class TestSELECT(unittest.TestCase):
 
         query.generate()
         self.assertEqual(query.sql,
-            "SELECT * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
+            "SELECT FAST * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
             "AS `people` WHERE `stuff` IN "
             "(SELECT `f` FROM `g` WHERE `things`#>>%s>JSON(%s))"
         )
@@ -168,7 +189,7 @@ class TestSELECT(unittest.TestCase):
 
         query.generate()
         self.assertEqual(query.sql,
-            "SELECT * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
+            "SELECT FAST * FROM (SELECT `a`.`b`.`c` FROM `d`.`e`) "
             "AS `people` WHERE `stuff` IN "
             "(SELECT `f` FROM `g` WHERE `things`#>>%s>JSON(%s)) "
             "GROUP BY `fee`,`fie` HAVING `foe`=%s "
@@ -176,13 +197,116 @@ class TestSELECT(unittest.TestCase):
         )
         self.assertEqual(query.args, ['$."a"[0][-1]."2"."-3"', '5', 'fum', 1, 2])
 
+        query.WHERE(more="stuff").HAVING(more="things")
+        query.generate(indent=2)
+        self.assertEqual(query.sql,"""SELECT
+  FAST
+  *
+FROM
+  (
+    SELECT
+      `a`.`b`.`c`
+    FROM
+      `d`.`e`
+  ) AS `people`
+WHERE
+  `stuff` IN (
+    SELECT
+      `f`
+    FROM
+      `g`
+    WHERE
+      `things`#>>%s>JSON(%s)
+  ) AND
+  `more`=%s
+GROUP BY
+  `fee`,
+  `fie`
+HAVING
+  `foe`=%s AND
+  `more`=%s
+ORDER BY
+  `yin`,
+  `yang` DESC
+LIMIT
+  %s,
+  %s""")
+
+        query.generate(indent=2, count=1)
+        self.assertEqual(query.sql,"""SELECT
+    FAST
+    *
+  FROM
+    (
+      SELECT
+        `a`.`b`.`c`
+      FROM
+        `d`.`e`
+    ) AS `people`
+  WHERE
+    `stuff` IN (
+      SELECT
+        `f`
+      FROM
+        `g`
+      WHERE
+        `things`#>>%s>JSON(%s)
+    ) AND
+    `more`=%s
+  GROUP BY
+    `fee`,
+    `fie`
+  HAVING
+    `foe`=%s AND
+    `more`=%s
+  ORDER BY
+    `yin`,
+    `yang` DESC
+  LIMIT
+    %s,
+    %s""")
+
+        query.generate(indent=2, count=2)
+        self.assertEqual(query.sql,"""SELECT
+      FAST
+      *
+    FROM
+      (
+        SELECT
+          `a`.`b`.`c`
+        FROM
+          `d`.`e`
+      ) AS `people`
+    WHERE
+      `stuff` IN (
+        SELECT
+          `f`
+        FROM
+          `g`
+        WHERE
+          `things`#>>%s>JSON(%s)
+      ) AND
+      `more`=%s
+    GROUP BY
+      `fee`,
+      `fie`
+    HAVING
+      `foe`=%s AND
+      `more`=%s
+    ORDER BY
+      `yin`,
+      `yang` DESC
+    LIMIT
+      %s,
+      %s""")
+
 
 class INSERT(relations_sql.INSERT):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
         ("TABLE", test_expression.TABLE),
-        ("FIELDS", test_expression.NAMES),
+        ("FIELDS", test_expression.FIELDS),
         ("VALUES", test_clause.VALUES),
         ("SELECT", SELECT)
     ])
@@ -198,17 +322,17 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
         self.assertEqual(query.FIELDS.expressions[0].name, "things")
-        self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "*")
+        self.assertEqual(query.SELECT.RESULTS.expressions[0].name, "*")
 
         query = INSERT("people.stuff", FIELDS=["things"], SELECT=SELECT("stuff").FROM("things"))
 
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
         self.assertEqual(query.FIELDS.expressions[0].name, "things")
-        self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "stuff")
+        self.assertEqual(query.SELECT.RESULTS.expressions[0].name, "stuff")
 
         table = test_expression.TABLE("people.stuff")
-        fields = test_expression.NAMES(["things"])
+        fields = test_expression.FIELDS(["things"])
         query = INSERT(table, FIELDS=fields, SELECT=SELECT("stuff").FROM("things"))
 
         self.assertEqual(query.TABLE.name, "stuff")
@@ -243,12 +367,93 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.sql,"INSERT INTO `people` (`stuff`,`things`) VALUES (%s,%s),(%s,%s)")
         self.assertEqual(query.args, [1, 2, 3, 4])
 
+        query.generate(indent=2)
+        self.assertEqual(query.sql,"""INSERT
+INTO
+  `people`
+  (
+    `stuff`,
+    `things`
+  )
+VALUES
+  (
+    %s,
+    %s
+  ),(
+    %s,
+    %s
+  )""")
+
+        query.generate(indent=2, count=1)
+        self.assertEqual(query.sql,"""INSERT
+  INTO
+    `people`
+    (
+      `stuff`,
+      `things`
+    )
+  VALUES
+    (
+      %s,
+      %s
+    ),(
+      %s,
+      %s
+    )""")
+
+        query.generate(indent=2, count=2)
+        self.assertEqual(query.sql,"""INSERT
+    INTO
+      `people`
+      (
+        `stuff`,
+        `things`
+      )
+    VALUES
+      (
+        %s,
+        %s
+      ),(
+        %s,
+        %s
+      )""")
+
         query = INSERT("people").OPTIONS("FAST")
         query.SELECT("stuff").FROM("things")
 
         query.generate()
         self.assertEqual(query.sql,"INSERT FAST INTO `people` SELECT `stuff` FROM `things`")
         self.assertEqual(query.args, [])
+
+        query.generate(indent=2)
+        self.assertEqual(query.sql,"""INSERT
+  FAST
+INTO
+  `people`
+SELECT
+  `stuff`
+FROM
+  `things`""")
+
+        query.generate(indent=2, count=1)
+        self.assertEqual(query.sql,"""INSERT
+    FAST
+  INTO
+    `people`
+  SELECT
+    `stuff`
+  FROM
+    `things`""")
+
+        query.generate(indent=2, count=2)
+        self.assertEqual(query.sql,"""INSERT
+      FAST
+    INTO
+      `people`
+    SELECT
+      `stuff`
+    FROM
+      `things`""")
 
         query = INSERT("people").VALUES(stuff=1, things=2).VALUES(3, 4)
         query.SELECT("stuff").FROM("things")
@@ -262,7 +467,7 @@ class LIMITED(relations_sql.LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("TABLE", test_expression.TABLE),
-        ("SELECT", test_clause.FIELDS),
+        ("SELECT", test_clause.RESULTS),
         ("LIMIT", test_clause.LIMIT)
     ])
 
@@ -277,7 +482,7 @@ class TestLIMITED(unittest.TestCase):
         self.assertEqual(query.SELECT.expressions[0].name, "*")
         self.assertEqual(query.TABLE.name, "people")
 
-        query = LIMITED("people", SELECT=test_clause.FIELDS("*"))
+        query = LIMITED("people", SELECT=test_clause.RESULTS("*"))
 
         self.assertEqual(query.SELECT.expressions[0].name, "*")
         self.assertEqual(query.TABLE.name, "people")
@@ -297,7 +502,7 @@ class TestLIMITED(unittest.TestCase):
 
     def test_generate(self):
 
-        query = LIMITED("people", SELECT=test_clause.FIELDS("*"), LIMIT=5)
+        query = LIMITED("people", SELECT=test_clause.RESULTS("*"), LIMIT=5)
 
         query.generate()
         self.assertEqual(query.sql, "LIMITED `people` * LIMIT %s")
@@ -340,6 +545,48 @@ class TestUPDATE(unittest.TestCase):
         self.assertEqual(query.sql, "UPDATE FAST `people` SET `stuff`=%s WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
         self.assertEqual(query.args, ["things", "stuff", 5])
 
+        query.generate(indent=2)
+        self.assertEqual(query.sql,"""UPDATE
+  FAST
+  `people`
+SET
+  `stuff`=%s
+WHERE
+  `things`=%s
+ORDER BY
+  `yin`,
+  `yang` DESC
+LIMIT
+  %s""")
+
+        query.generate(indent=2, count=1)
+        self.assertEqual(query.sql,"""UPDATE
+    FAST
+    `people`
+  SET
+    `stuff`=%s
+  WHERE
+    `things`=%s
+  ORDER BY
+    `yin`,
+    `yang` DESC
+  LIMIT
+    %s""")
+
+        query.generate(indent=2, count=2)
+        self.assertEqual(query.sql,"""UPDATE
+      FAST
+      `people`
+    SET
+      `stuff`=%s
+    WHERE
+      `things`=%s
+    ORDER BY
+      `yin`,
+      `yang` DESC
+    LIMIT
+      %s""")
+
         query.LIMIT(10)
 
         self.assertRaisesRegex(relations_sql.SQLError, "LIMIT can only be total", query.generate)
@@ -375,6 +622,45 @@ class TestDELETE(unittest.TestCase):
         query.generate()
         self.assertEqual(query.sql, "DELETE FAST FROM `people` WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
         self.assertEqual(query.args, ["stuff", 5])
+
+        query.generate(indent=2)
+        self.assertEqual(query.sql,"""DELETE
+  FAST
+FROM
+  `people`
+WHERE
+  `things`=%s
+ORDER BY
+  `yin`,
+  `yang` DESC
+LIMIT
+  %s""")
+
+        query.generate(indent=2, count=1)
+        self.assertEqual(query.sql,"""DELETE
+    FAST
+  FROM
+    `people`
+  WHERE
+    `things`=%s
+  ORDER BY
+    `yin`,
+    `yang` DESC
+  LIMIT
+    %s""")
+
+        query.generate(indent=2, count=2)
+        self.assertEqual(query.sql,"""DELETE
+      FAST
+    FROM
+      `people`
+    WHERE
+      `things`=%s
+    ORDER BY
+      `yin`,
+      `yang` DESC
+    LIMIT
+      %s""")
 
         query.LIMIT(10)
 

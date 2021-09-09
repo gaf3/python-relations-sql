@@ -26,19 +26,17 @@ class EXPRESSION(relations_sql.SQL):
 
         return value
 
-    def express(self, expression, sql, parentheses=False):
+    def express(self, expression, sql, **kwargs):
         """
         Add this expression's generation to our own
         """
 
         if isinstance(expression, collections.abc.Iterable):
             for each in expression:
-                self.express(each, sql)
-            return
-
-        if expression:
-            expression.generate()
-            sql.append(f"({expression.sql})" if parentheses else expression.sql)
+                self.express(each, sql, **kwargs)
+        elif expression:
+            expression.generate(**kwargs)
+            sql.append(expression.sql)
             self.args.extend(expression.args)
 
 
@@ -62,7 +60,7 @@ class VALUE(EXPRESSION):
 
         return 1
 
-    def generate(self):
+    def generate(self, **kwargs):
 
         if self.jsonify:
             self.sql = self.JSONIFY % self.PLACEHOLDER
@@ -79,20 +77,18 @@ class NOT(EXPRESSION):
 
     VALUE = VALUE
 
-    OPERAND = "NOT %s"
-
     expression = None
 
     def __init__(self, expression):
 
         self.expression = expression if isinstance(expression, relations_sql.SQL) else self.VALUE(expression)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
 
         self.args = []
 
-        self.express(self.expression, [])
-        self.sql = self.OPERAND % self.expression.sql
+        self.express(self.expression, [], indent=indent, count=count+1, pad=pad, **kwargs)
+        self.sql = f"NOT {self.expression.sql}"
 
 
 class LIST(EXPRESSION):
@@ -119,15 +115,18 @@ class LIST(EXPRESSION):
 
         return len(self.expressions)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
 
         sql = []
         self.args = []
 
-        for expression in self.expressions:
-            self.express(expression, sql)
+        current = pad * (count * indent)
+        line = "\n" if indent else ''
 
-        self.sql = ','.join(sql)
+        for expression in self.expressions:
+            self.express(expression, sql, indent=indent, count=count+1, pad=pad, **kwargs)
+
+        self.sql = f",{line}{current}".join(sql)
 
 
 class NAME(EXPRESSION):
@@ -155,7 +154,7 @@ class NAME(EXPRESSION):
         """
         self.name = name
 
-    def generate(self):
+    def generate(self, **kwargs):
 
         self.sql = self.quote(self.name)
         self.args = []
@@ -201,20 +200,25 @@ class TABLE(SCHEMA):
 
         self.prefix = prefix
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
 
         sql = []
         self.args = []
 
         if self.schema:
-            self.express(self.schema, sql)
+            self.express(self.schema, sql, **kwargs)
 
         sql.append(self.quote(self.name))
 
         self.sql = self.SEPARATOR.join(sql)
 
-        if self.prefix:
-            self.sql = f"{self.prefix} {self.sql}"
+        one = pad * indent
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+        line = "\n" if indent else ' '
+
+        if self.prefix is not None:
+            self.sql = f"{self.prefix}{line}{next}{self.sql}" if self.prefix else f"{one}{self.sql}"
 
 
 class FIELD(TABLE):
@@ -274,7 +278,7 @@ class FIELD(TABLE):
 
         return name, path
 
-    def field(self):
+    def field(self, **kwargs):
         """
         Generates the field with tbale and schema
         """
@@ -282,20 +286,20 @@ class FIELD(TABLE):
         sql = []
 
         if self.table:
-            self.express(self.table, sql)
+            self.express(self.table, sql, **kwargs)
 
         sql.append('*' if self.name == '*' else self.quote(self.name))
 
         return self.SEPARATOR.join(sql)
 
-    def generate(self):
+    def generate(self, **kwargs):
         """
         Generates the sql and args
         """
 
         self.args = []
 
-        field = self.JSONIFY % self.field() if self.jsonify else self.field()
+        field = self.JSONIFY % self.field() if self.jsonify else self.field(**kwargs)
 
         if self.path:
             self.sql = self.PATH % (field, self.PLACEHOLDER)
@@ -322,6 +326,34 @@ class NAMES(LIST):
                 self.expressions.append(self.ARG(expression))
 
 
+class FIELDS(NAMES):
+    """
+    Holds a list of field names only, with table
+    """
+
+    ARG = NAME
+
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
+        """
+        Generates the sql and args
+        """
+
+        count += 1
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+
+        one = pad * indent
+        line = "\n" if indent else ''
+        delimitter = f",{line}{next}"
+        left, right = (f"{one}({line}{next}", f"{line}{current})")
+
+        sql = []
+        self.args = []
+
+        self.express(self.expressions, sql, indent=indent, count=count+1, pad=' ', **kwargs)
+        self.sql = f"{left}{delimitter.join(sql)}{right}"
+
+
 class AS(EXPRESSION):
     """
     For AS pairings
@@ -341,7 +373,7 @@ class AS(EXPRESSION):
 
         return len(self.label) + len(self.expression)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
         Generates the sql and args
         """
@@ -349,10 +381,16 @@ class AS(EXPRESSION):
         sql = []
         self.args = []
 
-        self.express(self.expression, sql, parentheses=isinstance(self.expression, relations_sql.SELECT))
-        self.express(self.label, sql)
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+        line = "\n" if indent else ''
+        left, right = (f"({line}{next}", f"{line}{current})") if isinstance(self.expression, relations_sql.SELECT) else ('', '')
 
-        self.sql = " AS ".join(sql)
+        self.express(self.expression, sql, indent=indent, count=count+1, **kwargs)
+        self.express(self.label, sql, indent=indent, count=count+1, **kwargs)
+
+        self.sql = f"{left}{sql[0]}{right} AS {sql[1]}"
+
 
 ASC = -1
 DESC = 1
@@ -389,13 +427,13 @@ class ORDER(EXPRESSION):
 
         return len(self.expression)
 
-    def generate(self):
+    def generate(self, **kwargs):
 
         sql = []
         self.args = []
 
         if self.expression:
-            self.express(self.expression, sql)
+            self.express(self.expression, sql, **kwargs)
             if self.ORDER.get(self.order) is not None:
                 sql.append(self.ORDER[self.order])
 
@@ -422,7 +460,7 @@ class ASSIGN(EXPRESSION):
 
         return len(self.field) + len(self.expression)
 
-    def generate(self):
+    def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
         Generates the sql and args
         """
@@ -430,7 +468,12 @@ class ASSIGN(EXPRESSION):
         sql = []
         self.args = []
 
-        self.express(self.field, sql)
-        self.express(self.expression, sql)
+        current = pad * (count * indent)
+        next = current + (indent * pad)
+        line = "\n" if indent else ''
+        left, right = (f"({line}{next}", f"{line}{current})") if isinstance(self.expression, relations_sql.SELECT) else ('', '')
 
-        self.sql = "=".join(sql)
+        self.express(self.field, sql, indent=indent, count=count+1, **kwargs)
+        self.express(self.expression, sql, indent=indent, count=count+1, **kwargs)
+
+        self.sql = f"{sql[0]}={left}{sql[1]}{right}"

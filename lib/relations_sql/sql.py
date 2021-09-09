@@ -30,7 +30,7 @@ class SQL:
 
         return 1 if self.sql else 0
 
-    def generate(self):
+    def generate(self, **kwargs):
         """
         Generate the sql and args
         """
