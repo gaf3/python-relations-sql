@@ -160,18 +160,18 @@ class NAME(EXPRESSION):
         self.args = []
 
 
-class SCHEMA(NAME):
+class SCHEMANAME(NAME):
     """
     For schemas
     """
 
 
-class TABLE(SCHEMA):
+class TABLENAME(SCHEMANAME):
     """
     For tables
     """
 
-    SCHEMA = SCHEMA
+    SCHEMANAME = SCHEMANAME
 
     SEPARATOR = None
 
@@ -194,9 +194,9 @@ class TABLE(SCHEMA):
         self.name = pieces.pop(-1)
 
         if schema is not None:
-            self.schema = schema if isinstance(schema, relations_sql.SQL) else self.SCHEMA(schema)
+            self.schema = schema if isinstance(schema, relations_sql.SQL) else self.SCHEMANAME(schema)
         elif len(pieces) == 1:
-            self.schema = self.SCHEMA(pieces[0])
+            self.schema = self.SCHEMANAME(pieces[0])
 
         self.prefix = prefix
 
@@ -221,7 +221,7 @@ class TABLE(SCHEMA):
             self.sql = f"{self.prefix}{line}{next}{self.sql}" if self.prefix else f"{one}{self.sql}"
 
 
-class FIELD(TABLE):
+class COLUMNNAME(TABLENAME):
     """
     Class for storing a column that'll be used as a field
     """
@@ -230,7 +230,7 @@ class FIELD(TABLE):
     JSONIFY = None
     PATH = None
 
-    TABLE = TABLE
+    TABLENAME = TABLENAME
 
     table = None  # name of the table
 
@@ -262,7 +262,7 @@ class FIELD(TABLE):
                 schema = piece
 
         if table is not None:
-            self.table = table if isinstance(table, relations_sql.SQL) else self.TABLE(table, schema)
+            self.table = table if isinstance(table, relations_sql.SQL) else self.TABLENAME(table, schema)
 
         self.jsonify = jsonify
 
@@ -303,7 +303,7 @@ class FIELD(TABLE):
 
         if self.path:
             self.sql = self.PATH % (field, self.PLACEHOLDER)
-            self.args.append(self.walk())
+            self.args.append(self.walk(self.path))
         else:
             self.sql = field
 
@@ -326,7 +326,7 @@ class NAMES(LIST):
                 self.expressions.append(self.ARG(expression))
 
 
-class FIELDS(NAMES):
+class COLUMNNAMES(NAMES):
     """
     Holds a list of field names only, with table
     """
@@ -400,7 +400,7 @@ class ORDER(EXPRESSION):
     For anything that needs to be ordered
     """
 
-    EXPRESSION = FIELD
+    EXPRESSION = COLUMNNAME
 
     expression = None
     order = None
@@ -445,7 +445,7 @@ class ASSIGN(EXPRESSION):
     For SET pairings
     """
 
-    FIELD = NAME
+    COLUMNNAME = NAME
     EXPRESSION = VALUE
 
     field = None
@@ -453,7 +453,7 @@ class ASSIGN(EXPRESSION):
 
     def __init__(self, field, expression):
 
-        self.field = field if isinstance(field, relations_sql.SQL) else self.FIELD(field)
+        self.field = field if isinstance(field, relations_sql.SQL) else self.COLUMNNAME(field)
         self.expression = expression if isinstance(expression, relations_sql.SQL) else self.EXPRESSION(expression)
 
     def __len__(self):

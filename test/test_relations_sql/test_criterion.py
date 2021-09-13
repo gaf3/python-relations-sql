@@ -9,7 +9,7 @@ import relations_sql
 
 class SQL(test_sql.SQL):
 
-    LEFT = test_expression.FIELD
+    LEFT = test_expression.COLUMNNAME
     RIGHT = test_expression.VALUE
 
 
@@ -30,7 +30,7 @@ class TestCRITERION(unittest.TestCase):
 
         criterion = CRITERION("totes", "maigoats", jsonify=True)
 
-        self.assertIsInstance(criterion.left, test_expression.FIELD)
+        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
         self.assertFalse(criterion.invert)
         self.assertEqual(criterion.left.name, "totes")
         self.assertTrue(criterion.left.jsonify)
@@ -38,9 +38,9 @@ class TestCRITERION(unittest.TestCase):
         self.assertEqual(criterion.right.value, "maigoats")
         self.assertTrue(criterion.right.jsonify)
 
-        criterion = CRITERION(test_expression.FIELD("toats"), test_expression.VALUE("maigotes"))
+        criterion = CRITERION(test_expression.COLUMNNAME("toats"), test_expression.VALUE("maigotes"))
 
-        self.assertIsInstance(criterion.left, test_expression.FIELD)
+        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
         self.assertFalse(criterion.invert)
         self.assertEqual(criterion.left.name, "toats")
         self.assertFalse(criterion.left.jsonify)
@@ -50,7 +50,7 @@ class TestCRITERION(unittest.TestCase):
 
         criterion = CRITERION(totes__a="maigoats", invert=True)
 
-        self.assertIsInstance(criterion.left, test_expression.FIELD)
+        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
         self.assertTrue(criterion.invert)
         self.assertEqual(criterion.left.name, "totes")
         self.assertEqual(criterion.left.path, ["a"])
@@ -61,7 +61,7 @@ class TestCRITERION(unittest.TestCase):
 
         criterion = CRITERION(totes__a="maigoats", extracted=True)
 
-        self.assertIsInstance(criterion.left, test_expression.FIELD)
+        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
         self.assertEqual(criterion.left.name, "totes__a")
         self.assertEqual(criterion.left.path, [])
         self.assertFalse(criterion.left.jsonify)

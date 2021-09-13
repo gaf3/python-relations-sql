@@ -22,8 +22,8 @@ class LOGIC(relations_sql.CRITERIA):
 
 class ALIAS(relations_sql.CRITERIA):
 
-    ARGS = test_expression.FIELD
-    KWARG = test_expression.FIELD
+    ARGS = test_expression.COLUMNNAME
+    KWARG = test_expression.COLUMNNAME
     KWARGS = test_expression.AS
 
     DELIMITTER = " ALIAS "
@@ -50,7 +50,7 @@ class TestCRITERIA(unittest.TestCase):
         criteria = ALIAS("things")
 
         self.assertEqual(len(criteria.expressions), 1)
-        self.assertIsInstance(criteria.expressions[0], test_expression.FIELD)
+        self.assertIsInstance(criteria.expressions[0], test_expression.COLUMNNAME)
         self.assertEqual(criteria.expressions[0].name, "things")
 
     def test___call__(self):
@@ -73,7 +73,7 @@ class TestCRITERIA(unittest.TestCase):
 
         criteria("things")
         self.assertEqual(len(criteria.expressions), 1)
-        self.assertIsInstance(criteria.expressions[0], test_expression.FIELD)
+        self.assertIsInstance(criteria.expressions[0], test_expression.COLUMNNAME)
         self.assertEqual(criteria.expressions[0].name, "things")
 
     def test_add(self):
@@ -102,7 +102,7 @@ class TestCRITERIA(unittest.TestCase):
 
         criteria.add("people")
         self.assertEqual(len(criteria.expressions), 1)
-        self.assertIsInstance(criteria.expressions[0], test_expression.FIELD)
+        self.assertIsInstance(criteria.expressions[0], test_expression.COLUMNNAME)
         self.assertEqual(criteria.expressions[0].name, "people")
 
         criteria.add([test_expression.AS("totes", "maigoats")])
@@ -285,7 +285,7 @@ class TestHAS(unittest.TestCase):
         criteria = HAS("totes", ["mai", "goats"])
 
         self.assertIsInstance(criteria.expression, test_criterion.CONTAINS)
-        self.assertIsInstance(criteria.expression.left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.right, test_expression.VALUE)
         self.assertEqual(criteria.expression.left.name, "totes")
         self.assertEqual(criteria.expression.right.value, ["mai", "goats"])
@@ -293,7 +293,7 @@ class TestHAS(unittest.TestCase):
         criteria = HAS(totes=["mai", "goats"])
 
         self.assertIsInstance(criteria.expression, test_criterion.CONTAINS)
-        self.assertIsInstance(criteria.expression.left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.right, test_expression.VALUE)
         self.assertEqual(criteria.expression.left.name, "totes")
         self.assertEqual(criteria.expression.right.value, ["mai", "goats"])
@@ -316,7 +316,7 @@ class TestHAS(unittest.TestCase):
 class ANY(test_criterion.SQL, relations_sql.ANY):
 
     OR = OR
-    LEFT = test_expression.FIELD
+    LEFT = test_expression.COLUMNNAME
     VALUE = test_expression.VALUE
     CONTAINS = test_criterion.CONTAINS
 
@@ -329,9 +329,9 @@ class TestANY(unittest.TestCase):
         self.assertIsInstance(criteria.expression, OR)
         self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
         self.assertIsInstance(criteria.expression.expressions[1], test_criterion.CONTAINS)
-        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
-        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
         self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
         self.assertEqual(criteria.expression.expressions[0].right.value, ["mai"])
@@ -343,9 +343,9 @@ class TestANY(unittest.TestCase):
         self.assertIsInstance(criteria.expression, OR)
         self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
         self.assertIsInstance(criteria.expression.expressions[1], test_criterion.CONTAINS)
-        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
-        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
         self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
         self.assertEqual(criteria.expression.expressions[0].right.value, ["mai"])
@@ -378,9 +378,9 @@ class TestALL(unittest.TestCase):
         self.assertIsInstance(criteria.expression, AND)
         self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
         self.assertIsInstance(criteria.expression.expressions[1], test_criterion.LENGTHS)
-        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
-        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
         self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
         self.assertEqual(criteria.expression.expressions[0].right.value, ["mai", "goats"])
@@ -392,9 +392,9 @@ class TestALL(unittest.TestCase):
         self.assertIsInstance(criteria.expression, AND)
         self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
         self.assertIsInstance(criteria.expression.expressions[1], test_criterion.LENGTHS)
-        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
-        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.FIELD)
+        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.COLUMNNAME)
         self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
         self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
         self.assertEqual(criteria.expression.expressions[0].right.value, ["mai", "goats"])
