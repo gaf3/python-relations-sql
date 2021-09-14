@@ -10,8 +10,6 @@ class DDL(relations_sql.EXPRESSION):
     Base definiton
     """
 
-    STR = None
-
     migration = None
     definition = None
     added = None

@@ -45,6 +45,11 @@ class OUTSIDE(TABLE):
 
     INDEXES = False
 
+class LOCKED(TABLE):
+
+    SCHEMA = None
+    RENAME = None
+
 class TestTABLE(unittest.TestCase):
 
     maxDiff = None
@@ -380,6 +385,68 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         self.assertEqual(indexes[0].definition["name"], "name")
         self.assertEqual(indexes[0].migration["name"], "label")
 
+    def test_schema(self):
+
+        sql = []
+
+        ddl = TABLE(
+            migration={
+                "name": "good",
+                "schema": "dreaming"
+            },
+            definition={
+                "name": "evil",
+                "schema": "scheming"
+            }
+        )
+
+        ddl.schema(sql)
+        self.assertEqual(sql, ["""SCHEMA `scheming`.`evil` TO `scheming`"""])
+
+        ddl = LOCKED(
+            migration={
+                "name": "good",
+                "schema": "dreaming"
+            },
+            definition={
+                "name": "evil",
+                "schema": "scheming"
+            }
+        )
+
+        self.assertRaisesRegex(relations_sql.SQLError, "schema change not supported", ddl.schema, sql)
+
+    def test_rename(self):
+
+        sql = []
+
+        ddl = TABLE(
+            migration={
+                "name": "good",
+                "schema": "dreaming"
+            },
+            definition={
+                "name": "evil",
+                "schema": "scheming"
+            }
+        )
+
+        ddl.rename(sql)
+        self.assertEqual(sql, ["""RENAME `scheming`.`evil` TO `dreaming`.`good`"""])
+
+        ddl = LOCKED(
+            migration={
+                "name": "good",
+                "schema": "dreaming"
+            },
+            definition={
+                "name": "evil",
+                "schema": "scheming"
+            }
+        )
+
+        self.assertRaisesRegex(relations_sql.SQLError, "name change not supported", ddl.rename, sql)
+
     def test_modify(self):
 
         ddl = TABLE(
@@ -396,7 +463,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         ddl.generate()
         self.assertEqual(ddl.sql, """SCHEMA `scheming`.`evil` TO `scheming`;
 
-RENAME `scheming`.`evil` TO ``dreaming`.`good``;
+RENAME `scheming`.`evil` TO `dreaming`.`good`;
 """)
         self.assertEqual(ddl.args, [])
 

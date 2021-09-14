@@ -239,6 +239,26 @@ class TABLE(relations_sql.DDL):
                 }
             ))
 
+    def schema(self, sql):
+        """
+        Change the schema
+        """
+
+        if self.SCHEMA:
+            sql.append(self.SCHEMA % (self.name(definition=True), self.quote(self.definition.get("schema"))))
+        else:
+            raise relations_sql.SQLError(self, "schema change not supported")
+
+    def rename(self, sql):
+        """
+        Change the schema
+        """
+
+        if self.RENAME:
+            sql.append(self.RENAME % (self.name(definition=True), self.name()))
+        else:
+            raise relations_sql.SQLError(self, "name change not supported")
+
     def modify(self, indent=0, count=0, pad=' ', **kwargs):
         """
         MODIFY DLL
@@ -246,11 +266,11 @@ class TABLE(relations_sql.DDL):
 
         sql = []
 
-        if "schema" in self.migration and self.SCHEMA:
-            sql.append(self.SCHEMA % (self.name(definition=True), self.quote(self.definition.get("schema"))))
+        if "schema" in self.migration:
+            self.schema(sql)
 
-        if "name" in self.migration and self.RENAME:
-            sql.append(self.RENAME % (self.name(definition=True), self.quote(self.name())))
+        if "name" in self.migration:
+            self.rename(sql)
 
         inside = []
 
