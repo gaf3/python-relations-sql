@@ -36,7 +36,7 @@ class TABLE(relations_sql.DDL):
 
         return table.sql
 
-    def create(self, indent=0, count=0, pad=' ', **kwarg): # pylint: disable=too-many-locals
+    def create(self, indent=0, count=0, pad=' ', **kwargs): # pylint: disable=too-many-locals
         """
         CREATE DLL
         """
