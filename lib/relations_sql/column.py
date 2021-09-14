@@ -15,7 +15,7 @@ class COLUMN(relations_sql.DDL):
 
     KINDS = {}
 
-    COLUMNNAME = None
+    COLUMN_NAME = None
 
     STORE = None
     KIND = None
@@ -45,8 +45,8 @@ class COLUMN(relations_sql.DDL):
 
         if "__" in self.migration["store"]:
 
-            name, path = self.COLUMNNAME.split(self.migration["store"])
-            sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.COLUMNNAME.walk(path))))
+            name, path = self.COLUMN_NAME.split(self.migration["store"])
+            sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.COLUMN_NAME.walk(path))))
 
         else:
 

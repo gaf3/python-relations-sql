@@ -305,8 +305,8 @@ class INSERT(relations_sql.INSERT):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("TABLE", test_expression.TABLENAME),
-        ("COLUMNS", test_expression.COLUMNNAMES),
+        ("TABLE", test_expression.TABLE_NAME),
+        ("COLUMNS", test_expression.COLUMN_NAMES),
         ("VALUES", test_clause.VALUES),
         ("SELECT", SELECT)
     ])
@@ -331,8 +331,8 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.COLUMNS.expressions[0].name, "things")
         self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "stuff")
 
-        table = test_expression.TABLENAME("people.stuff")
-        columns = test_expression.COLUMNNAMES(["things"])
+        table = test_expression.TABLE_NAME("people.stuff")
+        columns = test_expression.COLUMN_NAMES(["things"])
         query = INSERT(table, COLUMNS=columns, SELECT=SELECT("stuff").FROM("things"))
 
         self.assertEqual(query.TABLE.name, "stuff")
@@ -466,7 +466,7 @@ class LIMITED(relations_sql.LIMITED):
     NAME = "LIMITED"
 
     CLAUSES = collections.OrderedDict([
-        ("TABLE", test_expression.TABLENAME),
+        ("TABLE", test_expression.TABLE_NAME),
         ("SELECT", test_clause.FIELDS),
         ("LIMIT", test_clause.LIMIT)
     ])
@@ -492,7 +492,7 @@ class TestLIMITED(unittest.TestCase):
         self.assertEqual(query.SELECT.expressions, [])
         self.assertEqual(query.TABLE.name, "people")
 
-        table = test_expression.TABLENAME("people")
+        table = test_expression.TABLE_NAME("people")
         query = LIMITED(table)
 
         self.assertEqual(query.SELECT.expressions, [])
@@ -517,7 +517,7 @@ class UPDATE(relations_sql.UPDATE):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("TABLE", test_expression.TABLENAME),
+        ("TABLE", test_expression.TABLE_NAME),
         ("SET", test_clause.SET),
         ("WHERE", test_clause.WHERE),
         ("ORDER_BY", test_clause.ORDER_BY),
@@ -596,7 +596,7 @@ class DELETE(relations_sql.DELETE):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("TABLE", test_expression.TABLENAME),
+        ("TABLE", test_expression.TABLE_NAME),
         ("WHERE", test_clause.WHERE),
         ("ORDER_BY", test_clause.ORDER_BY),
         ("LIMIT", test_clause.LIMIT)

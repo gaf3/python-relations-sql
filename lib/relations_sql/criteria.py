@@ -126,7 +126,7 @@ class ANY(SETS):
     """
 
     OR = OR
-    LEFT = relations_sql.COLUMNNAME
+    LEFT = relations_sql.COLUMN_NAME
     VALUE = relations_sql.VALUE
     CONTAINS = relations_sql.CONTAINS
 

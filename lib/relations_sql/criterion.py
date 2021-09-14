@@ -32,7 +32,7 @@ class CRITERION(relations_sql.EXPRESSION):
         if not isinstance(left, relations_sql.SQL):
             left = self.LEFT(left, jsonify=jsonify, extracted=extracted)
 
-        if isinstance(left, relations_sql.COLUMNNAME) and left.path:
+        if isinstance(left, relations_sql.COLUMN_NAME) and left.path:
             jsonify = True
 
         if not isinstance(right, relations_sql.SQL):
@@ -204,7 +204,7 @@ class CONTAINS(CRITERION):
     Wether one set contains another
     """
 
-    LEFT = relations_sql.COLUMNNAME
+    LEFT = relations_sql.COLUMN_NAME
     RIGHT = relations_sql.VALUE
 
     OPERAND = "CONTAINS(%s,%s)"
@@ -215,7 +215,7 @@ class LENGTHS(CRITERION):
     Wether one set contains another
     """
 
-    LEFT = relations_sql.COLUMNNAME
+    LEFT = relations_sql.COLUMN_NAME
     RIGHT = relations_sql.VALUE
 
     OPERAND = "LENGTHS(%s,%s)"

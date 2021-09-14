@@ -155,18 +155,18 @@ class NAME(EXPRESSION):
         self.args = []
 
 
-class SCHEMANAME(NAME):
+class SCHEMA_NAME(NAME):
     """
     For schemas
     """
 
 
-class TABLENAME(SCHEMANAME):
+class TABLE_NAME(SCHEMA_NAME):
     """
     For tables
     """
 
-    SCHEMANAME = SCHEMANAME
+    SCHEMA_NAME = SCHEMA_NAME
 
     schema = None
 
@@ -187,9 +187,9 @@ class TABLENAME(SCHEMANAME):
         self.name = pieces.pop(-1)
 
         if schema is not None:
-            self.schema = schema if isinstance(schema, relations_sql.SQL) else self.SCHEMANAME(schema)
+            self.schema = schema if isinstance(schema, relations_sql.SQL) else self.SCHEMA_NAME(schema)
         elif len(pieces) == 1:
-            self.schema = self.SCHEMANAME(pieces[0])
+            self.schema = self.SCHEMA_NAME(pieces[0])
 
         self.prefix = prefix
 
@@ -214,12 +214,12 @@ class TABLENAME(SCHEMANAME):
             self.sql = f"{self.prefix}{line}{next}{self.sql}" if self.prefix else f"{one}{self.sql}"
 
 
-class COLUMNNAME(TABLENAME):
+class COLUMN_NAME(TABLE_NAME):
     """
     Class for storing a column that'll be used as a column
     """
 
-    TABLENAME = TABLENAME
+    TABLE_NAME = TABLE_NAME
 
     table = None  # name of the table
 
@@ -251,7 +251,7 @@ class COLUMNNAME(TABLENAME):
                 schema = piece
 
         if table is not None:
-            self.table = table if isinstance(table, relations_sql.SQL) else self.TABLENAME(table, schema)
+            self.table = table if isinstance(table, relations_sql.SQL) else self.TABLE_NAME(table, schema)
 
         self.jsonify = jsonify
 
@@ -315,12 +315,12 @@ class NAMES(LIST):
                 self.expressions.append(self.ARG(expression))
 
 
-class COLUMNNAMES(NAMES):
+class COLUMN_NAMES(NAMES):
     """
     Holds a list of column names only, with table
     """
 
-    ARG = COLUMNNAME
+    ARG = COLUMN_NAME
 
     def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
@@ -389,7 +389,7 @@ class ORDER(EXPRESSION):
     For anything that needs to be ordered
     """
 
-    EXPRESSION = COLUMNNAME
+    EXPRESSION = COLUMN_NAME
 
     expression = None
     order = None
@@ -434,7 +434,7 @@ class ASSIGN(EXPRESSION):
     For SET pairings
     """
 
-    COLUMNNAME = COLUMNNAME
+    COLUMN_NAME = COLUMN_NAME
     EXPRESSION = VALUE
 
     column = None
@@ -442,7 +442,7 @@ class ASSIGN(EXPRESSION):
 
     def __init__(self, column, expression):
 
-        self.column = column if isinstance(column, relations_sql.SQL) else self.COLUMNNAME(column)
+        self.column = column if isinstance(column, relations_sql.SQL) else self.COLUMN_NAME(column)
         self.expression = expression if isinstance(expression, relations_sql.SQL) else self.EXPRESSION(expression)
 
     def __len__(self):

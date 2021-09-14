@@ -99,8 +99,8 @@ class FIELDS(CLAUSE):
     FIELDS part of SELECT statement
     """
 
-    ARGS = relations_sql.COLUMNNAME
-    KWARG = relations_sql.COLUMNNAME
+    ARGS = relations_sql.COLUMN_NAME
+    KWARG = relations_sql.COLUMN_NAME
     KWARGS = relations_sql.AS
 
 
@@ -111,8 +111,8 @@ class FROM(CLAUSE):
 
     NAME = "FROM"
 
-    ARGS = relations_sql.TABLENAME
-    KWARG = relations_sql.TABLENAME
+    ARGS = relations_sql.TABLE_NAME
+    KWARG = relations_sql.TABLE_NAME
     KWARGS = relations_sql.AS
 
 
@@ -136,7 +136,7 @@ class GROUP_BY(ARGS):
 
     NAME = "GROUP BY"
 
-    ARGS = relations_sql.COLUMNNAME
+    ARGS = relations_sql.COLUMN_NAME
 
 
 class HAVING(CLAUSE):

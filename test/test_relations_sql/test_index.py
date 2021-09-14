@@ -10,8 +10,8 @@ import relations_sql
 
 class INDEX(test_ddl.DDL, relations_sql.INDEX):
 
-    TABLE = test_expression.TABLENAME
-    COLUMNS = test_expression.COLUMNNAMES
+    TABLE = test_expression.TABLE_NAME
+    COLUMNS = test_expression.COLUMN_NAMES
 
     MODIFY = "MODIFY %s TO %s"
 

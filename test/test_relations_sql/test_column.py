@@ -18,7 +18,7 @@ class COLUMN(test_ddl.DDL, relations_sql.COLUMN):
         "json": "JSON"
     }
 
-    COLUMNNAME = test_expression.COLUMNNAME
+    COLUMN_NAME = test_expression.COLUMN_NAME
 
     STORE = "STORE %s AS %s"
     KIND = "KIND %s AS %s"

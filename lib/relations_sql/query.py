@@ -142,8 +142,8 @@ class INSERT(QUERY):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLENAME),
-        ("COLUMNS", relations_sql.COLUMNNAMES),
+        ("TABLE", relations_sql.TABLE_NAME),
+        ("COLUMNS", relations_sql.COLUMN_NAMES),
         ("VALUES", relations_sql.VALUES),
         ("SELECT", SELECT)
     ])
@@ -241,7 +241,7 @@ class UPDATE(LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLENAME),
+        ("TABLE", relations_sql.TABLE_NAME),
         ("SET", relations_sql.SET),
         ("WHERE", relations_sql.WHERE),
         ("ORDER_BY", relations_sql.ORDER_BY),
@@ -259,7 +259,7 @@ class DELETE(LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLENAME),
+        ("TABLE", relations_sql.TABLE_NAME),
         ("WHERE", relations_sql.WHERE),
         ("ORDER_BY", relations_sql.ORDER_BY),
         ("LIMIT", relations_sql.LIMIT)

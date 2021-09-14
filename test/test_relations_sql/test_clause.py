@@ -16,8 +16,8 @@ class KNOWN(relations_sql.CLAUSE):
 
     NAME = "CLAUSE"
 
-    ARGS = test_expression.COLUMNNAME
-    KWARG = test_expression.COLUMNNAME
+    ARGS = test_expression.COLUMN_NAME
+    KWARG = test_expression.COLUMN_NAME
     KWARGS = test_expression.AS
 
 class TestCLAUSE(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestCLAUSE(unittest.TestCase):
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.AS)
         self.assertIsInstance(clause.expressions[0].label, test_expression.NAME)
-        self.assertIsInstance(clause.expressions[0].expression, test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[0].expression, test_expression.COLUMN_NAME)
         self.assertEqual(clause.expressions[0].label.name, "stuff")
         self.assertEqual(clause.expressions[0].expression.name, "things")
 
@@ -68,7 +68,7 @@ class TestCLAUSE(unittest.TestCase):
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.AS)
         self.assertIsInstance(clause.expressions[0].label, test_expression.NAME)
-        self.assertIsInstance(clause.expressions[0].expression, test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[0].expression, test_expression.COLUMN_NAME)
         self.assertEqual(clause.expressions[0].label.name, "stuff")
         self.assertEqual(clause.expressions[0].expression.name, "things")
 
@@ -233,8 +233,8 @@ class TestOPTIONS(unittest.TestCase):
 
 class FIELDS(relations_sql.FIELDS):
 
-    ARGS = test_expression.COLUMNNAME
-    KWARG = test_expression.COLUMNNAME
+    ARGS = test_expression.COLUMN_NAME
+    KWARG = test_expression.COLUMN_NAME
     KWARGS = test_expression.AS
 
 class TestFIELDS(unittest.TestCase):
@@ -246,13 +246,13 @@ class TestFIELDS(unittest.TestCase):
         clause = FIELDS("*")
 
         self.assertEqual(len(clause.expressions), 1)
-        self.assertIsInstance(clause.expressions[0], test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[0], test_expression.COLUMN_NAME)
         self.assertEqual(clause.expressions[0].name, "*")
 
         clause = FIELDS("people.stuff.things")
 
         self.assertEqual(len(clause.expressions), 1)
-        self.assertIsInstance(clause.expressions[0], test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[0], test_expression.COLUMN_NAME)
         self.assertEqual(clause.expressions[0].name, "things")
 
         clause = FIELDS(stuff="things")
@@ -260,7 +260,7 @@ class TestFIELDS(unittest.TestCase):
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.AS)
         self.assertIsInstance(clause.expressions[0].label, test_expression.NAME)
-        self.assertIsInstance(clause.expressions[0].expression, test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[0].expression, test_expression.COLUMN_NAME)
         self.assertEqual(clause.expressions[0].label.name, "stuff")
         self.assertEqual(clause.expressions[0].expression.name, "things")
 
@@ -295,8 +295,8 @@ class TestFIELDS(unittest.TestCase):
 
 class FROM(relations_sql.FROM):
 
-    ARGS = test_expression.TABLENAME
-    KWARG = test_expression.TABLENAME
+    ARGS = test_expression.TABLE_NAME
+    KWARG = test_expression.TABLE_NAME
     KWARGS = test_expression.AS
 
 class TestFROM(unittest.TestCase):
@@ -308,12 +308,12 @@ class TestFROM(unittest.TestCase):
         clause = FROM("people", stuff="things")
 
         self.assertEqual(len(clause.expressions), 2)
-        self.assertIsInstance(clause.expressions[0], test_expression.TABLENAME)
+        self.assertIsInstance(clause.expressions[0], test_expression.TABLE_NAME)
         self.assertEqual(clause.expressions[0].name, "people")
 
         self.assertIsInstance(clause.expressions[1], test_expression.AS)
         self.assertIsInstance(clause.expressions[1].label, test_expression.NAME)
-        self.assertIsInstance(clause.expressions[1].expression, test_expression.TABLENAME)
+        self.assertIsInstance(clause.expressions[1].expression, test_expression.TABLE_NAME)
         self.assertEqual(clause.expressions[1].label.name, "stuff")
         self.assertEqual(clause.expressions[1].expression.name, "things")
 
@@ -362,7 +362,7 @@ class TestWHERE(unittest.TestCase):
         self.assertEqual(clause.expressions[0].value, "people")
 
         self.assertIsInstance(clause.expressions[1], test_criterion.EQ)
-        self.assertIsInstance(clause.expressions[1].left, test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[1].left, test_expression.COLUMN_NAME)
         self.assertIsInstance(clause.expressions[1].right, test_expression.VALUE)
         self.assertEqual(clause.expressions[1].left.name, "stuff")
         self.assertEqual(clause.expressions[1].right.value, "things")
@@ -462,7 +462,7 @@ class TestHAVING(unittest.TestCase):
         self.assertEqual(clause.expressions[0].value, "people")
 
         self.assertIsInstance(clause.expressions[1], test_criterion.EQ)
-        self.assertIsInstance(clause.expressions[1].left, test_expression.COLUMNNAME)
+        self.assertIsInstance(clause.expressions[1].left, test_expression.COLUMN_NAME)
         self.assertIsInstance(clause.expressions[1].right, test_expression.VALUE)
         self.assertEqual(clause.expressions[1].left.name, "stuff")
         self.assertEqual(clause.expressions[1].right.value, "things")
@@ -549,6 +549,7 @@ class TestORDER_BY(unittest.TestCase):
       `people`,
       `stuff` ASC,
       `things` DESC""")
+
 
 class LIMIT(relations_sql.LIMIT):
 

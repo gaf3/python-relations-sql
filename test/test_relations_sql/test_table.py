@@ -29,7 +29,7 @@ class Meta(relations.Model):
 
 class TABLE(test_ddl.DDL, relations_sql.TABLE):
 
-    NAME = test_expression.TABLENAME
+    NAME = test_expression.TABLE_NAME
     COLUMN = test_column.COLUMN
     INDEX = test_index.INDEX
     UNIQUE = test_index.UNIQUE
