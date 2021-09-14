@@ -111,7 +111,7 @@ class SELECT(QUERY):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("RESULTS", relations_sql.RESULTS),
+        ("FIELDS", relations_sql.FIELDS),
         ("FROM", relations_sql.FROM),
         ("WHERE", relations_sql.WHERE),
         ("GROUP_BY", relations_sql.GROUP_BY),
@@ -123,13 +123,13 @@ class SELECT(QUERY):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*kwargs)
-        self.RESULTS(*args)
+        self.FIELDS(*args)
 
     def __call__(self, *args, **kwargs):
         """
-        Shorthand for FIELDS
+        Shorthand for COLUMNS
         """
-        return self.RESULTS(*args, **kwargs)
+        return self.FIELDS(*args, **kwargs)
 
 
 class INSERT(QUERY):
@@ -142,8 +142,8 @@ class INSERT(QUERY):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLE),
-        ("FIELDS", relations_sql.FIELDS),
+        ("TABLE", relations_sql.TABLENAME),
+        ("COLUMNS", relations_sql.COLUMNNAMES),
         ("VALUES", relations_sql.VALUES),
         ("SELECT", SELECT)
     ])
@@ -158,12 +158,12 @@ class INSERT(QUERY):
                     self.clauses[clause] = table
                 else:
                     self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
-            elif clause == "FIELDS":
-                if "FIELDS" in kwargs:
-                    if isinstance(kwargs["FIELDS"], self.CLAUSES["FIELDS"]):
-                        self.clauses[clause] = kwargs["FIELDS"]
+            elif clause == "COLUMNS":
+                if "COLUMNS" in kwargs:
+                    if isinstance(kwargs["COLUMNS"], self.CLAUSES["COLUMNS"]):
+                        self.clauses[clause] = kwargs["COLUMNS"]
                     else:
-                        self.clauses[clause] = self.CLAUSES[clause](kwargs["FIELDS"])
+                        self.clauses[clause] = self.CLAUSES[clause](kwargs["COLUMNS"])
                 else:
                     self.clauses[clause] = self.CLAUSES[clause](args)
             else:
@@ -180,10 +180,10 @@ class INSERT(QUERY):
         Field the fields
         """
 
-        if self.FIELDS:
+        if self.COLUMNS:
             return
 
-        self.FIELDS = self.CLAUSES["FIELDS"](fields)
+        self.COLUMNS = self.CLAUSES["COLUMNS"](fields)
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
@@ -241,7 +241,7 @@ class UPDATE(LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLE),
+        ("TABLE", relations_sql.TABLENAME),
         ("SET", relations_sql.SET),
         ("WHERE", relations_sql.WHERE),
         ("ORDER_BY", relations_sql.ORDER_BY),
@@ -259,7 +259,7 @@ class DELETE(LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLE),
+        ("TABLE", relations_sql.TABLENAME),
         ("WHERE", relations_sql.WHERE),
         ("ORDER_BY", relations_sql.ORDER_BY),
         ("LIMIT", relations_sql.LIMIT)

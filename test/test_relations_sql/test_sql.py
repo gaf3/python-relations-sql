@@ -7,6 +7,7 @@ import relations_sql
 class SQL:
 
     QUOTE = '`'
+    STR = "'"
     SEPARATOR = '.'
     PLACEHOLDER = "%s"
     JSONIFY = "JSON(%s)"

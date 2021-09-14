@@ -94,13 +94,13 @@ class OPTIONS(ARGS):
     DELIMITTER = ' '
 
 
-class RESULTS(CLAUSE):
+class FIELDS(CLAUSE):
     """
-    RESULTS part of SELECT statement
+    FIELDS part of SELECT statement
     """
 
-    ARGS = relations_sql.FIELD
-    KWARG = relations_sql.FIELD
+    ARGS = relations_sql.COLUMNNAME
+    KWARG = relations_sql.COLUMNNAME
     KWARGS = relations_sql.AS
 
 
@@ -111,8 +111,8 @@ class FROM(CLAUSE):
 
     NAME = "FROM"
 
-    ARGS = relations_sql.TABLE
-    KWARG = relations_sql.TABLE
+    ARGS = relations_sql.TABLENAME
+    KWARG = relations_sql.TABLENAME
     KWARGS = relations_sql.AS
 
 
@@ -136,7 +136,7 @@ class GROUP_BY(ARGS):
 
     NAME = "GROUP BY"
 
-    ARGS = relations_sql.FIELD
+    ARGS = relations_sql.COLUMNNAME
 
 
 class HAVING(CLAUSE):
@@ -243,8 +243,8 @@ class VALUES(CLAUSE):
         Add a row to VALUES
         """
 
-        if kwargs.get("FIELDS"):
-            self.field(kwargs.pop("FIELDS"))
+        if kwargs.get("COLUMNS"):
+            self.field(kwargs.pop("COLUMNS"))
 
         if args and kwargs:
             raise relations_sql.SQLError(self, "add list or dict but not both")

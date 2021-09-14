@@ -16,7 +16,7 @@ class QUERY(relations_sql.QUERY):
     NAME = "QUERY"
 
     CLAUSES = collections.OrderedDict([
-        ("SELECT", test_clause.RESULTS),
+        ("SELECT", test_clause.FIELDS),
         ("FROM", test_clause.FROM)
     ])
 
@@ -126,7 +126,7 @@ class SELECT(relations_sql.SELECT):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("RESULTS", test_clause.RESULTS),
+        ("FIELDS", test_clause.FIELDS),
         ("FROM", test_clause.FROM),
         ("WHERE", test_clause.WHERE),
         ("GROUP_BY", test_clause.GROUP_BY),
@@ -143,7 +143,7 @@ class TestSELECT(unittest.TestCase):
 
         query = SELECT("*").FROM("people").WHERE(stuff__gt="things")
 
-        self.assertEqual(query.RESULTS.expressions[0].name, "*")
+        self.assertEqual(query.FIELDS.expressions[0].name, "*")
         self.assertEqual(query.FROM.expressions[0].name, "people")
         self.assertIsInstance(query.WHERE.expressions[0], test_criterion.GT)
         self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
@@ -305,8 +305,8 @@ class INSERT(relations_sql.INSERT):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("TABLE", test_expression.TABLE),
-        ("FIELDS", test_expression.FIELDS),
+        ("TABLE", test_expression.TABLENAME),
+        ("COLUMNS", test_expression.COLUMNNAMES),
         ("VALUES", test_clause.VALUES),
         ("SELECT", SELECT)
     ])
@@ -321,23 +321,23 @@ class TestINSERT(unittest.TestCase):
 
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
-        self.assertEqual(query.FIELDS.expressions[0].name, "things")
-        self.assertEqual(query.SELECT.RESULTS.expressions[0].name, "*")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
+        self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "*")
 
-        query = INSERT("people.stuff", FIELDS=["things"], SELECT=SELECT("stuff").FROM("things"))
-
-        self.assertEqual(query.TABLE.name, "stuff")
-        self.assertEqual(query.TABLE.schema.name, "people")
-        self.assertEqual(query.FIELDS.expressions[0].name, "things")
-        self.assertEqual(query.SELECT.RESULTS.expressions[0].name, "stuff")
-
-        table = test_expression.TABLE("people.stuff")
-        fields = test_expression.FIELDS(["things"])
-        query = INSERT(table, FIELDS=fields, SELECT=SELECT("stuff").FROM("things"))
+        query = INSERT("people.stuff", COLUMNS=["things"], SELECT=SELECT("stuff").FROM("things"))
 
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
-        self.assertEqual(query.FIELDS.expressions[0].name, "things")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
+        self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "stuff")
+
+        table = test_expression.TABLENAME("people.stuff")
+        fields = test_expression.COLUMNNAMES(["things"])
+        query = INSERT(table, COLUMNS=fields, SELECT=SELECT("stuff").FROM("things"))
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
 
         self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for INSERT", INSERT, "table", nope=False)
 
@@ -354,10 +354,10 @@ class TestINSERT(unittest.TestCase):
         query = INSERT("people.stuff")
 
         query.field(["things"])
-        self.assertEqual(query.FIELDS.expressions[0].name, "things")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
 
         query.field(["thingies"])
-        self.assertEqual(query.FIELDS.expressions[0].name, "things")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
 
     def test_generate(self):
 
@@ -466,8 +466,8 @@ class LIMITED(relations_sql.LIMITED):
     NAME = "LIMITED"
 
     CLAUSES = collections.OrderedDict([
-        ("TABLE", test_expression.TABLE),
-        ("SELECT", test_clause.RESULTS),
+        ("TABLE", test_expression.TABLENAME),
+        ("SELECT", test_clause.FIELDS),
         ("LIMIT", test_clause.LIMIT)
     ])
 
@@ -482,7 +482,7 @@ class TestLIMITED(unittest.TestCase):
         self.assertEqual(query.SELECT.expressions[0].name, "*")
         self.assertEqual(query.TABLE.name, "people")
 
-        query = LIMITED("people", SELECT=test_clause.RESULTS("*"))
+        query = LIMITED("people", SELECT=test_clause.FIELDS("*"))
 
         self.assertEqual(query.SELECT.expressions[0].name, "*")
         self.assertEqual(query.TABLE.name, "people")
@@ -492,7 +492,7 @@ class TestLIMITED(unittest.TestCase):
         self.assertEqual(query.SELECT.expressions, [])
         self.assertEqual(query.TABLE.name, "people")
 
-        table = test_expression.TABLE("people")
+        table = test_expression.TABLENAME("people")
         query = LIMITED(table)
 
         self.assertEqual(query.SELECT.expressions, [])
@@ -502,7 +502,7 @@ class TestLIMITED(unittest.TestCase):
 
     def test_generate(self):
 
-        query = LIMITED("people", SELECT=test_clause.RESULTS("*"), LIMIT=5)
+        query = LIMITED("people", SELECT=test_clause.FIELDS("*"), LIMIT=5)
 
         query.generate()
         self.assertEqual(query.sql, "LIMITED `people` * LIMIT %s")
@@ -517,7 +517,7 @@ class UPDATE(relations_sql.UPDATE):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("TABLE", test_expression.TABLE),
+        ("TABLE", test_expression.TABLENAME),
         ("SET", test_clause.SET),
         ("WHERE", test_clause.WHERE),
         ("ORDER_BY", test_clause.ORDER_BY),
@@ -596,7 +596,7 @@ class DELETE(relations_sql.DELETE):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", test_clause.OPTIONS),
-        ("TABLE", test_expression.TABLE),
+        ("TABLE", test_expression.TABLENAME),
         ("WHERE", test_clause.WHERE),
         ("ORDER_BY", test_clause.ORDER_BY),
         ("LIMIT", test_clause.LIMIT)
