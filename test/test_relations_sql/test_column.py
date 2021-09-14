@@ -46,13 +46,13 @@ class TestCOLUMN(unittest.TestCase):
         ddl = COLUMN(field.define())
 
         ddl.create()
-        self.assertEqual(ddl.sql, "`flag` BOOL")
+        self.assertEqual(ddl.sql, """`flag` BOOL""")
 
         field = relations.Field(int, name="id")
         ddl = COLUMN(field.define())
 
         ddl.create()
-        self.assertEqual(ddl.sql, "`id` INT")
+        self.assertEqual(ddl.sql, """`id` INT""")
 
         field = relations.Field(float, "price", store="_price", default=1.25, none=False)
         ddl = COLUMN(field.define())
@@ -225,5 +225,5 @@ SET NOT NONE `id`""")
         ddl = COLUMN(definition=field.define())
 
         ddl.generate()
-        self.assertEqual(ddl.sql, "DROP `flag`")
+        self.assertEqual(ddl.sql, """DROP `flag`""")
         self.assertEqual(ddl.args, [])

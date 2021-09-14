@@ -14,8 +14,6 @@ class EXPRESSION(relations_sql.SQL):
     Base class for expressions
     """
 
-    QUOTE = None
-
     def quote(self, value):
         """
         Quote name if we hae quotes
@@ -44,9 +42,6 @@ class VALUE(EXPRESSION):
     """
     Class for storing a value that will need to be escaped
     """
-
-    PLACEHOLDER = None
-    JSONIFY = None
 
     value = None # the value
     jsonify = None # whether this value will be used with JSON
@@ -173,8 +168,6 @@ class TABLENAME(SCHEMANAME):
 
     SCHEMANAME = SCHEMANAME
 
-    SEPARATOR = None
-
     schema = None
 
     prefix = None
@@ -223,18 +216,14 @@ class TABLENAME(SCHEMANAME):
 
 class COLUMNNAME(TABLENAME):
     """
-    Class for storing a column that'll be used as a field
+    Class for storing a column that'll be used as a column
     """
-
-    PLACEHOLDER = None
-    JSONIFY = None
-    PATH = None
 
     TABLENAME = TABLENAME
 
     table = None  # name of the table
 
-    jsonify = None # whether we need to cast this field as JSON
+    jsonify = None # whether we need to cast this column as JSON
     path = None     # path to use in the JSON
 
     def __init__(self, name, table=None, schema=None, jsonify=False, extracted=False):
@@ -267,20 +256,20 @@ class COLUMNNAME(TABLENAME):
         self.jsonify = jsonify
 
     @staticmethod
-    def split(field):
+    def split(column):
         """
-        Splits field value into name and path
+        Splits column value into name and path
         """
 
-        path = relations.Field.split(field)
+        path = relations.Field.split(column)
 
         name = path.pop(0)
 
         return name, path
 
-    def field(self, **kwargs):
+    def column(self, **kwargs):
         """
-        Generates the field with tbale and schema
+        Generates the column with tbale and schema
         """
 
         sql = []
@@ -299,18 +288,18 @@ class COLUMNNAME(TABLENAME):
 
         self.args = []
 
-        field = self.JSONIFY % self.field() if self.jsonify else self.field(**kwargs)
+        column = self.JSONIFY % self.column() if self.jsonify else self.column(**kwargs)
 
         if self.path:
-            self.sql = self.PATH % (field, self.PLACEHOLDER)
+            self.sql = self.PATH % (column, self.PLACEHOLDER)
             self.args.append(self.walk(self.path))
         else:
-            self.sql = field
+            self.sql = column
 
 
 class NAMES(LIST):
     """
-    Holds a list of field names only, with table
+    Holds a list of column names only, with table
     """
 
     ARG = NAME
@@ -328,10 +317,10 @@ class NAMES(LIST):
 
 class COLUMNNAMES(NAMES):
     """
-    Holds a list of field names only, with table
+    Holds a list of column names only, with table
     """
 
-    ARG = NAME
+    ARG = COLUMNNAME
 
     def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
@@ -445,20 +434,20 @@ class ASSIGN(EXPRESSION):
     For SET pairings
     """
 
-    COLUMNNAME = NAME
+    COLUMNNAME = COLUMNNAME
     EXPRESSION = VALUE
 
-    field = None
+    column = None
     expression = None
 
-    def __init__(self, field, expression):
+    def __init__(self, column, expression):
 
-        self.field = field if isinstance(field, relations_sql.SQL) else self.COLUMNNAME(field)
+        self.column = column if isinstance(column, relations_sql.SQL) else self.COLUMNNAME(column)
         self.expression = expression if isinstance(expression, relations_sql.SQL) else self.EXPRESSION(expression)
 
     def __len__(self):
 
-        return len(self.field) + len(self.expression)
+        return len(self.column) + len(self.expression)
 
     def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
@@ -473,7 +462,7 @@ class ASSIGN(EXPRESSION):
         line = "\n" if indent else ''
         left, right = (f"({line}{next}", f"{line}{current})") if isinstance(self.expression, relations_sql.SELECT) else ('', '')
 
-        self.express(self.field, sql, indent=indent, count=count+1, **kwargs)
+        self.express(self.column, sql, indent=indent, count=count+1, **kwargs)
         self.express(self.expression, sql, indent=indent, count=count+1, **kwargs)
 
         self.sql = f"{sql[0]}={left}{sql[1]}{right}"

@@ -22,7 +22,7 @@ class TestSQLError(unittest.TestCase):
 
         error = relations_sql.SQLError("unittest", "oops")
 
-        self.assertEqual(error.sql, "unittest")
+        self.assertEqual(error.sql, """unittest""")
         self.assertEqual(error.message, "oops")
 
 
@@ -34,7 +34,7 @@ class TestSQL(unittest.TestCase):
 
         sql = relations_sql.SQL("unit", "test")
 
-        self.assertEqual(sql.sql, "unit")
+        self.assertEqual(sql.sql, """unit""")
         self.assertEqual(sql.args, "test")
 
     def test___len__(self):

@@ -175,15 +175,15 @@ class INSERT(QUERY):
                 else:
                     self.clauses[clause] = self.CLAUSES[clause]().bind(self)
 
-    def field(self, fields):
+    def column(self, columns):
         """
-        Field the fields
+        Field the columns
         """
 
         if self.COLUMNS:
             return
 
-        self.COLUMNS = self.CLAUSES["COLUMNS"](fields)
+        self.COLUMNS = self.CLAUSES["COLUMNS"](columns)
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """

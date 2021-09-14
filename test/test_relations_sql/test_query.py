@@ -81,7 +81,7 @@ class TestQUERY(unittest.TestCase):
         query = QUERY(SELECT="people.stuff", FROM="things")
 
         query.generate()
-        self.assertEqual(query.sql, "QUERY `people`.`stuff` FROM `things`")
+        self.assertEqual(query.sql, """QUERY `people`.`stuff` FROM `things`""")
         self.assertEqual(query.args, [])
 
         query.generate(indent=2)
@@ -109,7 +109,7 @@ FROM
         clone = copy.deepcopy(query)
 
         query.generate()
-        self.assertEqual(query.sql, "QUERY `people`.`stuff` FROM `things`")
+        self.assertEqual(query.sql, """QUERY `people`.`stuff` FROM `things`""")
         self.assertEqual(query.args, [])
 
         self.assertIsNone(clone.sql)
@@ -154,7 +154,7 @@ class TestSELECT(unittest.TestCase):
         query = SELECT("*").OPTIONS("FAST").FROM("people").WHERE(stuff__gt="things")
 
         query.generate()
-        self.assertEqual(query.sql, "SELECT FAST * FROM `people` WHERE `stuff`>%s")
+        self.assertEqual(query.sql, """SELECT FAST * FROM `people` WHERE `stuff`>%s""")
         self.assertEqual(query.args, ["things"])
 
         query = SELECT(
@@ -332,8 +332,8 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "stuff")
 
         table = test_expression.TABLENAME("people.stuff")
-        fields = test_expression.COLUMNNAMES(["things"])
-        query = INSERT(table, COLUMNS=fields, SELECT=SELECT("stuff").FROM("things"))
+        columns = test_expression.COLUMNNAMES(["things"])
+        query = INSERT(table, COLUMNS=columns, SELECT=SELECT("stuff").FROM("things"))
 
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
@@ -349,14 +349,14 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.TABLE.name, "stuff")
         self.assertEqual(query.TABLE.schema.name, "people")
 
-    def test_field(self):
+    def test_column(self):
 
         query = INSERT("people.stuff")
 
-        query.field(["things"])
+        query.column(["things"])
         self.assertEqual(query.COLUMNS.expressions[0].name, "things")
 
-        query.field(["thingies"])
+        query.column(["thingies"])
         self.assertEqual(query.COLUMNS.expressions[0].name, "things")
 
     def test_generate(self):
@@ -505,7 +505,7 @@ class TestLIMITED(unittest.TestCase):
         query = LIMITED("people", SELECT=test_clause.FIELDS("*"), LIMIT=5)
 
         query.generate()
-        self.assertEqual(query.sql, "LIMITED `people` * LIMIT %s")
+        self.assertEqual(query.sql, """LIMITED `people` * LIMIT %s""")
         self.assertEqual(query.args, [5])
 
         query.LIMIT(10)
@@ -542,7 +542,7 @@ class TestUPDATE(unittest.TestCase):
         query.OPTIONS("FAST").ORDER_BY("yin", yang=DESC).LIMIT(5)
 
         query.generate()
-        self.assertEqual(query.sql, "UPDATE FAST `people` SET `stuff`=%s WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
+        self.assertEqual(query.sql, """UPDATE FAST `people` SET `stuff`=%s WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s""")
         self.assertEqual(query.args, ["things", "stuff", 5])
 
         query.generate(indent=2)
@@ -620,7 +620,7 @@ class TestDELETE(unittest.TestCase):
         query.OPTIONS("FAST").ORDER_BY("yin", yang=DESC).LIMIT(5)
 
         query.generate()
-        self.assertEqual(query.sql, "DELETE FAST FROM `people` WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s")
+        self.assertEqual(query.sql, """DELETE FAST FROM `people` WHERE `things`=%s ORDER BY `yin`,`yang` DESC LIMIT %s""")
         self.assertEqual(query.args, ["stuff", 5])
 
         query.generate(indent=2)

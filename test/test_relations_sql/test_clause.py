@@ -31,7 +31,7 @@ class TestCLAUSE(unittest.TestCase):
         self.assertEqual(clause("people"), clause)
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], relations_sql.SQL)
-        self.assertEqual(clause.expressions[0].sql, "people")
+        self.assertEqual(clause.expressions[0].sql, """people""")
 
         statement = unittest.mock.MagicMock()
         clause = KNOWN().bind(statement)
@@ -59,7 +59,7 @@ class TestCLAUSE(unittest.TestCase):
         self.assertEqual(clause.add("people"), clause)
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], relations_sql.SQL)
-        self.assertEqual(clause.expressions[0].sql, "people")
+        self.assertEqual(clause.expressions[0].sql, """people""")
 
         statement = unittest.mock.MagicMock()
         clause = KNOWN().bind(statement)
@@ -80,7 +80,7 @@ class TestCLAUSE(unittest.TestCase):
 
         clause("people", "stuff", "things")
         clause.generate()
-        self.assertEqual(clause.sql, "people,stuff,things")
+        self.assertEqual(clause.sql, """people,stuff,things""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -104,7 +104,7 @@ class TestCLAUSE(unittest.TestCase):
 
         clause("people", stuff="things")
         clause.generate()
-        self.assertEqual(clause.sql, "CLAUSE `people`,`things` AS `stuff`")
+        self.assertEqual(clause.sql, """CLAUSE `people`,`things` AS `stuff`""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -212,7 +212,7 @@ class TestOPTIONS(unittest.TestCase):
 
         clause("people", "stuff", "things")
         clause.generate()
-        self.assertEqual(clause.sql, "people stuff things")
+        self.assertEqual(clause.sql, """people stuff things""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -272,12 +272,12 @@ class TestFIELDS(unittest.TestCase):
 
         clause("*")
         clause.generate()
-        self.assertEqual(clause.sql, "*")
+        self.assertEqual(clause.sql, """*""")
         self.assertEqual(clause.args, [])
 
         clause(stuff="things")
         clause.generate()
-        self.assertEqual(clause.sql, "*,`things` AS `stuff`")
+        self.assertEqual(clause.sql, """*,`things` AS `stuff`""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -325,7 +325,7 @@ class TestFROM(unittest.TestCase):
 
         clause("people", stuff="things")
         clause.generate()
-        self.assertEqual(clause.sql, "FROM `people`,`things` AS `stuff`")
+        self.assertEqual(clause.sql, """FROM `people`,`things` AS `stuff`""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -375,7 +375,7 @@ class TestWHERE(unittest.TestCase):
 
         clause("people", stuff="things")
         clause.generate()
-        self.assertEqual(clause.sql, "WHERE %s AND `stuff`=%s")
+        self.assertEqual(clause.sql, """WHERE %s AND `stuff`=%s""")
         self.assertEqual(clause.args, ["people", "things"])
 
         clause.generate(indent=2)
@@ -422,7 +422,7 @@ class TestGROUP_BY(unittest.TestCase):
 
         clause("people", "stuff", "things")
         clause.generate()
-        self.assertEqual(clause.sql, "GROUP BY `people`,`stuff`,`things`")
+        self.assertEqual(clause.sql, """GROUP BY `people`,`stuff`,`things`""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -475,7 +475,7 @@ class TestHAVING(unittest.TestCase):
 
         clause("people", stuff="things")
         clause.generate()
-        self.assertEqual(clause.sql, "HAVING %s AND `stuff`=%s")
+        self.assertEqual(clause.sql, """HAVING %s AND `stuff`=%s""")
         self.assertEqual(clause.args, ["people", "things"])
 
         clause.generate(indent=2)
@@ -529,7 +529,7 @@ class TestORDER_BY(unittest.TestCase):
 
         clause("people", stuff=ASC, things=DESC)
         clause.generate()
-        self.assertEqual(clause.sql, "ORDER BY `people`,`stuff` ASC,`things` DESC")
+        self.assertEqual(clause.sql, """ORDER BY `people`,`stuff` ASC,`things` DESC""")
         self.assertEqual(clause.args, [])
 
         clause.generate(indent=2)
@@ -606,7 +606,7 @@ class TestLIMIT(unittest.TestCase):
 
         clause(10, 5)
         clause.generate()
-        self.assertEqual(clause.sql, "LIMIT %s,%s")
+        self.assertEqual(clause.sql, """LIMIT %s,%s""")
         self.assertEqual(clause.args, [10, 5])
 
         clause.generate(indent=2)
@@ -640,8 +640,8 @@ class TestSET(unittest.TestCase):
         self.assertEqual(len(clause.expressions), 2)
         self.assertIsInstance(clause.expressions[0], test_expression.ASSIGN)
         self.assertIsInstance(clause.expressions[1], test_expression.ASSIGN)
-        self.assertEqual(clause.expressions[0].field.name, "fee")
-        self.assertEqual(clause.expressions[1].field.name, "foe")
+        self.assertEqual(clause.expressions[0].column.name, "fee")
+        self.assertEqual(clause.expressions[1].column.name, "foe")
         self.assertEqual(clause.expressions[0].expression.value, "fie")
         self.assertEqual(clause.expressions[1].expression.value, "fum")
 
@@ -653,7 +653,7 @@ class TestSET(unittest.TestCase):
 
         clause(fee="fie", foe="fum")
         clause.generate()
-        self.assertEqual(clause.sql, "SET `fee`=%s,`foe`=%s")
+        self.assertEqual(clause.sql, """SET `fee`=%s,`foe`=%s""")
         self.assertEqual(clause.args, ["fie", "fum"])
 
         clause.generate(indent=2)
@@ -680,18 +680,18 @@ class TestVALUES(unittest.TestCase):
 
     maxDiff = None
 
-    def test_fields(self):
+    def test_columns(self):
 
         statement = unittest.mock.MagicMock()
         clause = VALUES().bind(statement)
 
-        clause.field([1, 2, 3])
-        self.assertEqual(clause.fields, [1, 2, 3])
-        statement.field.assert_called_once_with([1, 2, 3])
+        clause.column([1, 2, 3])
+        self.assertEqual(clause.columns, [1, 2, 3])
+        statement.column.assert_called_once_with([1, 2, 3])
 
-        clause.field([4, 5, 5])
-        self.assertEqual(clause.fields, [1, 2, 3])
-        statement.field.assert_called_once_with([1, 2, 3])
+        clause.column([4, 5, 5])
+        self.assertEqual(clause.columns, [1, 2, 3])
+        statement.column.assert_called_once_with([1, 2, 3])
 
     def test_add(self):
 
@@ -699,8 +699,8 @@ class TestVALUES(unittest.TestCase):
         clause = VALUES().bind(statement)
 
         clause.add(4, 5, 6, COLUMNS=[1, 2, 3])
-        self.assertEqual(clause.fields, [1, 2, 3])
-        statement.field.assert_called_once_with([1, 2, 3])
+        self.assertEqual(clause.columns, [1, 2, 3])
+        statement.column.assert_called_once_with([1, 2, 3])
         self.assertIsInstance(clause.expressions[0], test_expression.LIST)
         self.assertIsInstance(clause.expressions[0].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[0].expressions[1], test_expression.VALUE)
@@ -710,8 +710,8 @@ class TestVALUES(unittest.TestCase):
         self.assertEqual(clause.expressions[0].expressions[2].value, 6)
 
         clause.add(7, 8, 9, COLUMNS=[10])
-        self.assertEqual(clause.fields, [1, 2, 3])
-        statement.field.assert_called_once_with([1, 2, 3])
+        self.assertEqual(clause.columns, [1, 2, 3])
+        statement.column.assert_called_once_with([1, 2, 3])
         self.assertIsInstance(clause.expressions[1], test_expression.LIST)
         self.assertIsInstance(clause.expressions[1].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[1].expressions[1], test_expression.VALUE)
@@ -724,8 +724,8 @@ class TestVALUES(unittest.TestCase):
         clause = VALUES().bind(statement)
 
         clause.add(**{"1": 4, "2": 5, "3": 6})
-        self.assertEqual(clause.fields, ['1', '2', '3'])
-        statement.field.assert_called_once_with(['1', '2', '3'])
+        self.assertEqual(clause.columns, ['1', '2', '3'])
+        statement.column.assert_called_once_with(['1', '2', '3'])
         self.assertIsInstance(clause.expressions[0], test_expression.LIST)
         self.assertIsInstance(clause.expressions[0].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[0].expressions[1], test_expression.VALUE)
@@ -734,9 +734,9 @@ class TestVALUES(unittest.TestCase):
         self.assertEqual(clause.expressions[0].expressions[1].value, 5)
         self.assertEqual(clause.expressions[0].expressions[2].value, 6)
 
-        self.assertRaisesRegex(relations_sql.SQLError, "add list or dict but not both", clause.add, "nope", field="nope")
-        self.assertRaisesRegex(relations_sql.SQLError, "missing field 1 in \{'field': 'nope'\}", clause.add, field="nope")
-        self.assertRaisesRegex(relations_sql.SQLError, "wrong values \('nope',\) for fields \['1', '2', '3'\]", clause.add, "nope")
+        self.assertRaisesRegex(relations_sql.SQLError, "add list or dict but not both", clause.add, "nope", column="nope")
+        self.assertRaisesRegex(relations_sql.SQLError, "missing column 1 in \{'column': 'nope'\}", clause.add, column="nope")
+        self.assertRaisesRegex(relations_sql.SQLError, "wrong values \('nope',\) for columns \['1', '2', '3'\]", clause.add, "nope")
 
     def test_generate(self):
 
@@ -746,7 +746,7 @@ class TestVALUES(unittest.TestCase):
 
         clause(fee="fie", foe="fum")
         clause.generate()
-        self.assertEqual(clause.sql, "VALUES (%s,%s)")
+        self.assertEqual(clause.sql, """VALUES (%s,%s)""")
         self.assertEqual(clause.args, ["fie", "fum"])
 
         clause(fee="fie", foe="fum")

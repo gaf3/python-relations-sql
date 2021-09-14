@@ -76,12 +76,12 @@ class TestINDEX(unittest.TestCase):
         ddl = INDEX(definition={"name": "persons"})
 
         ddl.drop()
-        self.assertEqual(ddl.sql, "DROP INDEX `persons`")
+        self.assertEqual(ddl.sql, """DROP INDEX `persons`""")
 
         ddl = INDEX(definition={"table": {"schema": "people", "name": "stuff"}, "name": "things"})
 
         ddl.drop()
-        self.assertEqual(ddl.sql, "DROP INDEX `people`.`stuff_things`")
+        self.assertEqual(ddl.sql, """DROP INDEX `people`.`stuff_things`""")
 
     def test_generate(self):
 
@@ -106,7 +106,7 @@ class TestINDEX(unittest.TestCase):
         ddl = INDEX(definition={"name": "persons"})
 
         ddl.generate()
-        self.assertEqual(ddl.sql, "DROP INDEX `persons`")
+        self.assertEqual(ddl.sql, """DROP INDEX `persons`""")
         self.assertEqual(ddl.args, [])
 
 
@@ -141,5 +141,5 @@ class TestUNIQUE(unittest.TestCase):
         ddl = UNIQUE(definition={"name": "persons"})
 
         ddl.generate()
-        self.assertEqual(ddl.sql, "DROP INDEX `persons`")
+        self.assertEqual(ddl.sql, """DROP INDEX `persons`""")
         self.assertEqual(ddl.args, [])

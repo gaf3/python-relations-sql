@@ -224,19 +224,19 @@ class VALUES(CLAUSE):
 
     DELIMITTER = None
 
-    fields = None
+    columns = None
 
-    def field(self, fields):
+    def column(self, columns):
         """
-        Field the fields
+        Field the columns
         """
 
-        if self.fields:
+        if self.columns:
             return
 
-        self.fields = fields
+        self.columns = columns
         if self.statement:
-            self.statement.field(self.fields)
+            self.statement.column(self.columns)
 
     def add(self, *args, **kwargs):
         """
@@ -244,25 +244,25 @@ class VALUES(CLAUSE):
         """
 
         if kwargs.get("COLUMNS"):
-            self.field(kwargs.pop("COLUMNS"))
+            self.column(kwargs.pop("COLUMNS"))
 
         if args and kwargs:
             raise relations_sql.SQLError(self, "add list or dict but not both")
 
         if kwargs:
 
-            self.field(sorted(kwargs.keys()))
+            self.column(sorted(kwargs.keys()))
 
             args = []
 
-            for field in self.fields:
-                if field not in kwargs:
-                    raise relations_sql.SQLError(self, f"missing field {field} in {kwargs}")
-                args.append(kwargs[field])
+            for column in self.columns:
+                if column not in kwargs:
+                    raise relations_sql.SQLError(self, f"missing column {column} in {kwargs}")
+                args.append(kwargs[column])
 
         if args:
-            if self.fields is not None and len(args) != len(self.fields):
-                raise relations_sql.SQLError(self, f"wrong values {args} for fields {self.fields}")
+            if self.columns is not None and len(args) != len(self.columns):
+                raise relations_sql.SQLError(self, f"wrong values {args} for columns {self.columns}")
 
             self.expressions.append(self.ARGS(args))
 

@@ -39,7 +39,7 @@ class TestCRITERIA(unittest.TestCase):
 
         self.assertEqual(len(criteria.expressions), 1)
         self.assertIsInstance(criteria.expressions[0], relations_sql.SQL)
-        self.assertEqual(criteria.expressions[0].sql, "people")
+        self.assertEqual(criteria.expressions[0].sql, """people""")
 
         criteria = LOGIC("stuff")
 
@@ -60,7 +60,7 @@ class TestCRITERIA(unittest.TestCase):
         criteria("people")
         self.assertEqual(len(criteria.expressions), 1)
         self.assertIsInstance(criteria.expressions[0], relations_sql.SQL)
-        self.assertEqual(criteria.expressions[0].sql, "people")
+        self.assertEqual(criteria.expressions[0].sql, """people""")
 
         criteria = LOGIC()
 
@@ -83,7 +83,7 @@ class TestCRITERIA(unittest.TestCase):
         criteria.add("people")
         self.assertEqual(len(criteria.expressions), 1)
         self.assertIsInstance(criteria.expressions[0], relations_sql.SQL)
-        self.assertEqual(criteria.expressions[0].sql, "people")
+        self.assertEqual(criteria.expressions[0].sql, """people""")
 
         criteria = LOGIC()
 
@@ -118,7 +118,7 @@ class TestCRITERIA(unittest.TestCase):
 
         criteria("people", "stuff", "things")
         criteria.generate()
-        self.assertEqual(criteria.sql, "people stuff things")
+        self.assertEqual(criteria.sql, """people stuff things""")
         self.assertEqual(criteria.args, [])
 
         criteria = LOGIC()
@@ -126,7 +126,7 @@ class TestCRITERIA(unittest.TestCase):
 
         criteria(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True))
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes`=%s LOGIC `toast`!=%s)")
+        self.assertEqual(criteria.sql, """(`totes`=%s LOGIC `toast`!=%s)""")
         self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
         criteria.generate(indent=2)
@@ -199,7 +199,7 @@ class TestAND(unittest.TestCase):
 
         criteria = AND(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True))
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes`=%s AND `toast`!=%s)")
+        self.assertEqual(criteria.sql, """(`totes`=%s AND `toast`!=%s)""")
         self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
         criteria.generate(indent=2)
@@ -233,7 +233,7 @@ class TestOR(unittest.TestCase):
 
         criteria = OR(test_criterion.EQ("totes", "maigoats"), test_criterion.EQ("toast", "myghost", invert=True))
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes`=%s OR `toast`!=%s)")
+        self.assertEqual(criteria.sql, """(`totes`=%s OR `toast`!=%s)""")
         self.assertEqual(criteria.args, ["maigoats", "myghost"])
 
         criteria.generate(indent=2)
@@ -270,7 +270,7 @@ class TestSETS(unittest.TestCase):
         criteria = SETS("totes", ["mai", "goats"])
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "(`totes` AND JSON(%s))")
+        self.assertEqual(criteria.sql, """(`totes` AND JSON(%s))""")
         self.assertEqual(criteria.args, ['["mai", "goats"]'])
 
 
@@ -309,7 +309,7 @@ class TestHAS(unittest.TestCase):
         criteria = HAS("totes", ["mai", "goats"])
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "CONTAINS(`totes`,JSON(%s))")
+        self.assertEqual(criteria.sql, """CONTAINS(`totes`,JSON(%s))""")
         self.assertEqual(criteria.args, ['["mai", "goats"]'])
 
 
@@ -359,7 +359,7 @@ class TestANY(unittest.TestCase):
         criteria = ANY("totes", ["mai", "goats"])
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "(CONTAINS(`totes`,JSON(%s)) OR CONTAINS(`totes`,JSON(%s)))")
+        self.assertEqual(criteria.sql, """(CONTAINS(`totes`,JSON(%s)) OR CONTAINS(`totes`,JSON(%s)))""")
         self.assertEqual(criteria.args, ['["mai"]', '["goats"]'])
 
 
@@ -406,7 +406,7 @@ class TestALL(unittest.TestCase):
         criteria = ALL("totes", ["mai", "goats"])
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "(CONTAINS(`totes`,JSON(%s)) AND LENGTHS(`totes`,JSON(%s)))")
+        self.assertEqual(criteria.sql, """(CONTAINS(`totes`,JSON(%s)) AND LENGTHS(`totes`,JSON(%s)))""")
         self.assertEqual(criteria.args, ['["mai", "goats"]', '["mai", "goats"]'])
 
 
@@ -435,31 +435,31 @@ class TestOP(unittest.TestCase):
         criteria = OP("totes__null", True)
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "`totes` IS NULL")
+        self.assertEqual(criteria.sql, """`totes` IS NULL""")
         self.assertEqual(criteria.args, [])
 
         criteria = OP(totes__a__null=False)
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "`totes`#>>%s IS NOT NULL")
+        self.assertEqual(criteria.sql, """`totes`#>>%s IS NOT NULL""")
         self.assertEqual(criteria.args, ['$."a"'])
 
         criteria = OP(totes__a__not_null=True)
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "`totes`#>>%s IS NOT NULL")
+        self.assertEqual(criteria.sql, """`totes`#>>%s IS NOT NULL""")
         self.assertEqual(criteria.args, ['$."a"'])
 
         criteria = OP(totes__a__not_has=[1, 2, 3])
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "NOT CONTAINS(`totes`#>>%s,JSON(%s))")
+        self.assertEqual(criteria.sql, """NOT CONTAINS(`totes`#>>%s,JSON(%s))""")
         self.assertEqual(criteria.args, ['$."a"', '[1, 2, 3]'])
 
         criteria = OP(totes=1, JSONIFY=True)
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "JSON(`totes`)=JSON(%s)")
+        self.assertEqual(criteria.sql, """JSON(`totes`)=JSON(%s)""")
         self.assertEqual(criteria.args, ['1'])
 
         self.assertRaisesRegex(relations_sql.SQLError, "need single pair", OP, "nope")
@@ -467,7 +467,7 @@ class TestOP(unittest.TestCase):
         criteria = OP(totes__a__null=False, EXTRACTED=True)
 
         criteria.generate()
-        self.assertEqual(criteria.sql, "`totes__a` IS NOT NULL")
+        self.assertEqual(criteria.sql, """`totes__a` IS NOT NULL""")
         self.assertEqual(criteria.args, [])
 
         self.assertRaisesRegex(relations_sql.SQLError, "need single pair", OP, "nope")
