@@ -44,10 +44,6 @@ class TestQUERY(unittest.TestCase):
         model = unittest.mock.MagicMock()
         query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
-        query.retrieve(False)
-
-        model.retrieve.assert_called_once_with(False)
-
         def nope():
 
             query.nope
@@ -75,6 +71,54 @@ class TestQUERY(unittest.TestCase):
         query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
         self.assertEqual(query.model, model)
+
+    def test_create(self):
+
+      model = unittest.mock.MagicMock()
+      query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+
+      query.create(True, a=1)
+      model.create.assert_called_once_with(True, a=1, query=query)
+
+    def test_count(self):
+
+      model = unittest.mock.MagicMock()
+      query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+
+      query.count(True, a=1)
+      model.count.assert_called_once_with(True, a=1, query=query)
+
+    def test_labels(self):
+
+      model = unittest.mock.MagicMock()
+      query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+
+      query.labels(True, a=1)
+      model.labels.assert_called_once_with(True, a=1, query=query)
+
+    def test_retrieve(self):
+
+      model = unittest.mock.MagicMock()
+      query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+
+      query.retrieve(True, a=1)
+      model.retrieve.assert_called_once_with(True, a=1, query=query)
+
+    def test_update(self):
+
+      model = unittest.mock.MagicMock()
+      query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+
+      query.update(True, a=1)
+      model.update.assert_called_once_with(True, a=1, query=query)
+
+    def test_delete(self):
+
+      model = unittest.mock.MagicMock()
+      query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
+
+      query.delete(True, a=1)
+      model.delete.assert_called_once_with(True, a=1, query=query)
 
     def test_generate(self):
 

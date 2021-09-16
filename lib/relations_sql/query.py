@@ -17,14 +17,6 @@ class QUERY(relations_sql.EXPRESSION):
     CLAUSES = None
     clauses = None
 
-    MODEL = [
-        'create',
-        'count',
-        'retrieve',
-        'labels',
-        'update',
-        'delete'
-    ]
     model = None
 
     def __init__(self, **kwargs):
@@ -47,9 +39,6 @@ class QUERY(relations_sql.EXPRESSION):
 
         if name in self.CLAUSES:
             return self.clauses[name]
-
-        if name in self.MODEL and self.model is not None:
-            return getattr(self.model, name)
 
         raise AttributeError(f"'{self}' object has no attribute '{name}'")
 
@@ -85,6 +74,48 @@ class QUERY(relations_sql.EXPRESSION):
 
         self.model = model
         return self
+
+    def create(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.create(query=self, *args, **kwargs)
+
+    def count(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.count(query=self, *args, **kwargs)
+
+    def labels(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.labels(query=self, *args, **kwargs)
+
+    def retrieve(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.retrieve(query=self, *args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.update(query=self, *args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.delete(query=self, *args, **kwargs)
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
