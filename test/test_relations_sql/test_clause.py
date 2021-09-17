@@ -33,10 +33,10 @@ class TestCLAUSE(unittest.TestCase):
         self.assertIsInstance(clause.expressions[0], relations_sql.SQL)
         self.assertEqual(clause.expressions[0].sql, """people""")
 
-        statement = unittest.mock.MagicMock()
-        clause = KNOWN().bind(statement)
+        query = unittest.mock.MagicMock()
+        clause = KNOWN().bind(query)
 
-        self.assertEqual(clause(stuff="things"), statement)
+        self.assertEqual(clause(stuff="things"), query)
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.AS)
         self.assertIsInstance(clause.expressions[0].label, test_expression.NAME)
@@ -46,11 +46,11 @@ class TestCLAUSE(unittest.TestCase):
 
     def test_bind(self):
 
-        statement = unittest.mock.MagicMock()
+        query = unittest.mock.MagicMock()
         clause = KNOWN()
 
-        self.assertEqual(clause.bind(statement), clause)
-        self.assertEqual(clause.statement, statement)
+        self.assertEqual(clause.bind(query), clause)
+        self.assertEqual(clause.query, query)
 
     def test_add(self):
 
@@ -61,10 +61,10 @@ class TestCLAUSE(unittest.TestCase):
         self.assertIsInstance(clause.expressions[0], relations_sql.SQL)
         self.assertEqual(clause.expressions[0].sql, """people""")
 
-        statement = unittest.mock.MagicMock()
-        clause = KNOWN().bind(statement)
+        query = unittest.mock.MagicMock()
+        clause = KNOWN().bind(query)
 
-        self.assertEqual(clause.add(stuff="things"), statement)
+        self.assertEqual(clause.add(stuff="things"), query)
         self.assertEqual(len(clause.expressions), 1)
         self.assertIsInstance(clause.expressions[0], test_expression.AS)
         self.assertIsInstance(clause.expressions[0].label, test_expression.NAME)
@@ -177,8 +177,8 @@ class TestARGS(unittest.TestCase):
         self.assertIsInstance(clause.expressions[0], test_expression.VALUE)
         self.assertFalse(clause.expressions[0].value)
 
-        statement = unittest.mock.MagicMock()
-        self.assertEqual(clause.bind(statement)(False), statement)
+        query = unittest.mock.MagicMock()
+        self.assertEqual(clause.bind(query)(False), query)
 
         self.assertRaises(TypeError, clause.add, nope=False)
 
@@ -191,8 +191,8 @@ class TestARGS(unittest.TestCase):
         self.assertIsInstance(clause.expressions[0], test_expression.VALUE)
         self.assertFalse(clause.expressions[0].value)
 
-        statement = unittest.mock.MagicMock()
-        self.assertEqual(clause.bind(statement).add(False), statement)
+        query = unittest.mock.MagicMock()
+        self.assertEqual(clause.bind(query).add(False), query)
 
         self.assertRaises(TypeError, clause.add, nope=False)
 
@@ -573,10 +573,10 @@ class TestLIMIT(unittest.TestCase):
         self.assertIsInstance(clause.expressions[1], test_expression.VALUE)
         self.assertEqual(clause.expressions[1].value, 5)
 
-        statement = unittest.mock.MagicMock()
-        clause = LIMIT().bind(statement)
+        query = unittest.mock.MagicMock()
+        clause = LIMIT().bind(query)
 
-        self.assertEqual(clause.add(10, 5), statement)
+        self.assertEqual(clause.add(10, 5), query)
         self.assertEqual(len(clause.expressions), 2)
         self.assertIsInstance(clause.expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[1], test_expression.VALUE)
@@ -681,27 +681,48 @@ class TestVALUES(unittest.TestCase):
 
     maxDiff = None
 
-    def test_columns(self):
+    def test_column(self):
 
-        statement = unittest.mock.MagicMock()
-        clause = VALUES().bind(statement)
+        query = unittest.mock.MagicMock()
+        clause = VALUES().bind(query)
+
+        query.COLUMNS = None
+
+        def column(columns):
+
+            query.COLUMNS = test_expression.COLUMN_NAMES(columns)
+
+        query.column.side_effect = column
 
         clause.column([1, 2, 3])
         self.assertEqual(clause.columns, [1, 2, 3])
-        statement.column.assert_called_once_with([1, 2, 3])
+        query.column.assert_called_once_with([1, 2, 3])
 
-        clause.column([4, 5, 5])
+        clause.column([4, 5, 6])
         self.assertEqual(clause.columns, [1, 2, 3])
-        statement.column.assert_called_once_with([1, 2, 3])
+        query.column.assert_called_once_with([1, 2, 3])
+
+        clause = VALUES()
+
+        clause.column([4, 5, 6])
+        self.assertEqual(clause.columns, [4, 5, 6])
 
     def test_add(self):
 
-        statement = unittest.mock.MagicMock()
-        clause = VALUES().bind(statement)
+        query = unittest.mock.MagicMock()
+        clause = VALUES().bind(query)
+
+        query.COLUMNS = None
+
+        def column(columns):
+
+            query.COLUMNS = test_expression.COLUMN_NAMES(columns)
+
+        query.column.side_effect = column
 
         clause.add(4, 5, 6, COLUMNS=[1, 2, 3])
         self.assertEqual(clause.columns, [1, 2, 3])
-        statement.column.assert_called_once_with([1, 2, 3])
+        query.column.assert_called_once_with([1, 2, 3])
         self.assertIsInstance(clause.expressions[0], test_expression.LIST)
         self.assertIsInstance(clause.expressions[0].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[0].expressions[1], test_expression.VALUE)
@@ -712,7 +733,7 @@ class TestVALUES(unittest.TestCase):
 
         clause.add(7, 8, 9, COLUMNS=[10])
         self.assertEqual(clause.columns, [1, 2, 3])
-        statement.column.assert_called_once_with([1, 2, 3])
+        query.column.assert_called_once_with([1, 2, 3])
         self.assertIsInstance(clause.expressions[1], test_expression.LIST)
         self.assertIsInstance(clause.expressions[1].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[1].expressions[1], test_expression.VALUE)
@@ -721,12 +742,20 @@ class TestVALUES(unittest.TestCase):
         self.assertEqual(clause.expressions[1].expressions[1].value, 8)
         self.assertEqual(clause.expressions[1].expressions[2].value, 9)
 
-        statement = unittest.mock.MagicMock()
-        clause = VALUES().bind(statement)
+        query = unittest.mock.MagicMock()
+        clause = VALUES().bind(query)
+
+        query.COLUMNS = None
+
+        def column(columns):
+
+            query.COLUMNS = test_expression.COLUMN_NAMES(columns)
+
+        query.column.side_effect = column
 
         clause.add(**{"1": 4, "2": 5, "3": 6})
         self.assertEqual(clause.columns, ['1', '2', '3'])
-        statement.column.assert_called_once_with(['1', '2', '3'])
+        query.column.assert_called_once_with(['1', '2', '3'])
         self.assertIsInstance(clause.expressions[0], test_expression.LIST)
         self.assertIsInstance(clause.expressions[0].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[0].expressions[1], test_expression.VALUE)

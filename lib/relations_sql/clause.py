@@ -18,7 +18,7 @@ class CLAUSE(relations_sql.CRITERIA):
     PARENTHESES = False
     NAME = None
 
-    statement = None
+    query = None
 
     def __init__(self, *args, **kwargs):
 
@@ -45,14 +45,14 @@ class CLAUSE(relations_sql.CRITERIA):
                 expression = self.KWARG(kwargs[key])
             self.expressions.append(self.KWARGS(key, expression))
 
-        return self.statement or self
+        return self.query or self
 
-    def bind(self, statement):
+    def bind(self, query):
         """
         Bind this statment to this clause for adding
         """
 
-        self.statement = statement
+        self.query = query
         return self
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
@@ -86,7 +86,7 @@ class ARGS(CLAUSE):
 
 class OPTIONS(ARGS):
     """
-    Beginning of a SELECT statement
+    Beginning of a SELECT query
     """
 
     ARGS = relations_sql.SQL
@@ -96,7 +96,7 @@ class OPTIONS(ARGS):
 
 class FIELDS(CLAUSE):
     """
-    FIELDS part of SELECT statement
+    FIELDS part of SELECT query
     """
 
     ARGS = relations_sql.COLUMN_NAME
@@ -200,7 +200,7 @@ class LIMIT(CLAUSE):
         if offset is not None:
             self.expressions.append(self.ARGS(offset))
 
-        return self.statement or self
+        return self.query or self
 
 
 class SET(CLAUSE):
@@ -234,9 +234,16 @@ class VALUES(CLAUSE):
         if self.columns:
             return
 
-        self.columns = columns
-        if self.statement:
-            self.statement.column(self.columns)
+        if self.query:
+
+            if not self.query.COLUMNS:
+                self.query.column(columns)
+
+            self.columns = [expresion.name for expresion in self.query.COLUMNS.expressions]
+
+        else:
+
+            self.columns = columns
 
     def add(self, *args, **kwargs):
         """
@@ -266,7 +273,7 @@ class VALUES(CLAUSE):
 
             self.expressions.append(self.ARGS(args))
 
-        return self.statement or self
+        return self.query or self
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
