@@ -20,11 +20,11 @@ class TABLE(relations_sql.DDL):
     INDEXES = None
 
     SCHEMA = None
-    RENAME = None
+    STORE = None
 
     def name(self, definition=False):
         """
-        Generate a quoted name, with store as the default
+        Generate a quoted name, with table as the default
         """
 
         state = self.definition if definition or "store" not in self.migration else self.migration
@@ -249,15 +249,15 @@ class TABLE(relations_sql.DDL):
         else:
             raise relations_sql.SQLError(self, "schema change not supported")
 
-    def rename(self, sql):
+    def store(self, sql):
         """
         Change the schema
         """
 
-        if self.RENAME:
-            sql.append(self.RENAME % (self.name(definition=True), self.name()))
+        if self.STORE:
+            sql.append(self.STORE % (self.name(definition=True), self.name()))
         else:
-            raise relations_sql.SQLError(self, "name change not supported")
+            raise relations_sql.SQLError(self, "store change not supported")
 
     def modify(self, indent=0, count=0, pad=' ', **kwargs):
         """
@@ -269,8 +269,8 @@ class TABLE(relations_sql.DDL):
         if "schema" in self.migration:
             self.schema(sql)
 
-        if "name" in self.migration:
-            self.rename(sql)
+        if "store" in self.migration:
+            self.store(sql)
 
         inside = []
 

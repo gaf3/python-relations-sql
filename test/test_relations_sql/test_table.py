@@ -35,7 +35,7 @@ class TABLE(test_ddl.DDL, relations_sql.TABLE):
     UNIQUE = test_index.UNIQUE
 
     SCHEMA = "SCHEMA %s TO %s"
-    RENAME = "RENAME %s TO %s"
+    STORE = "STORE %s TO %s"
 
 class INSIDE(TABLE):
 
@@ -48,7 +48,7 @@ class OUTSIDE(TABLE):
 class LOCKED(TABLE):
 
     SCHEMA = None
-    RENAME = None
+    STORE = None
 
 class TestTABLE(unittest.TestCase):
 
@@ -416,7 +416,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
 
         self.assertRaisesRegex(relations_sql.SQLError, "schema change not supported", ddl.schema, sql)
 
-    def test_rename(self):
+    def test_store(self):
 
         sql = []
 
@@ -431,8 +431,8 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
             }
         )
 
-        ddl.rename(sql)
-        self.assertEqual(sql, ["""RENAME `scheming`.`evil` TO `dreaming`.`good`"""])
+        ddl.store(sql)
+        self.assertEqual(sql, ["""STORE `scheming`.`evil` TO `dreaming`.`good`"""])
 
         ddl = LOCKED(
             migration={
@@ -445,7 +445,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
             }
         )
 
-        self.assertRaisesRegex(relations_sql.SQLError, "name change not supported", ddl.rename, sql)
+        self.assertRaisesRegex(relations_sql.SQLError, "store change not supported", ddl.store, sql)
 
     def test_modify(self):
 
@@ -463,7 +463,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         ddl.generate()
         self.assertEqual(ddl.sql, """SCHEMA `scheming`.`evil` TO `scheming`;
 
-RENAME `scheming`.`evil` TO `dreaming`.`good`;
+STORE `scheming`.`evil` TO `dreaming`.`good`;
 """)
         self.assertEqual(ddl.args, [])
 
