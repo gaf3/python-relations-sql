@@ -189,8 +189,8 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         self.assertEqual(columns[0].migration["default"], 1.25)
         self.assertEqual(columns[1].migration["store"], "thingies")
         self.assertEqual(columns[1].definition["store"], "things")
-        self.assertEqual(columns[2].migration["store"], "thingies_for__0____1")
-        self.assertEqual(columns[2].definition["store"], "things_for__0____1")
+        self.assertEqual(columns[2].migration["store"], "thingies__for__0____1")
+        self.assertEqual(columns[2].definition["store"], "things__for__0____1")
 
         ddl = TABLE(
             migration={
@@ -214,10 +214,10 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
 
         ddl.fields_change(columns)
         self.assertEqual(len(columns), 2)
-        self.assertEqual(columns[0].migration["store"], "things_for__1____0")
+        self.assertEqual(columns[0].migration["store"], "things__for__1____0")
         self.assertTrue(columns[0].added)
         self.assertIsNone(columns[0].definition)
-        self.assertEqual(columns[1].definition["store"], "things_for__0____1")
+        self.assertEqual(columns[1].definition["store"], "things__for__0____1")
         self.assertIsNone(columns[1].migration)
 
         ddl = TABLE(
@@ -242,9 +242,9 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
 
         ddl.fields_change(columns)
         self.assertEqual(len(columns), 1)
-        self.assertEqual(columns[0].migration["store"], "things_for__0____1")
+        self.assertEqual(columns[0].migration["store"], "things__for__0____1")
         self.assertEqual(columns[0].migration["kind"], "float")
-        self.assertEqual(columns[0].definition["store"], "things_for__0____1")
+        self.assertEqual(columns[0].definition["store"], "things__for__0____1")
         self.assertEqual(columns[0].definition["kind"], "str")
 
     def test_fields_remove(self):
@@ -271,7 +271,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         self.assertIsNone(columns[0].migration)
         self.assertEqual(columns[0].definition["store"], "things")
         self.assertIsNone(columns[1].migration)
-        self.assertEqual(columns[1 ].definition["store"], "things_for__0____1")
+        self.assertEqual(columns[1 ].definition["store"], "things__for__0____1")
 
     def test_indexes_modify(self):
 
@@ -511,7 +511,12 @@ STORE `scheming`.`evil` TO `dreaming`.`good`;
         )
 
         ddl.generate()
-        self.assertEqual(ddl.sql, """ALTER TABLE `yep` SET DEFAULT `spend` AS 1.25,STORE `things` AS `thingies`,STORE `things_for__0____1` AS `thingies_for__0____1`,KIND `thingies_for__0____1` AS STR;\n""")
+        self.assertEqual(ddl.sql,
+            """ALTER TABLE `yep` """
+            """SET DEFAULT `spend` AS 1.25,"""
+            """STORE `things` AS `thingies`,"""
+            """STORE `things__for__0____1` AS `thingies__for__0____1`,"""
+            """KIND `thingies__for__0____1` AS STR;\n""")
         self.assertEqual(ddl.args, [])
 
         ddl = TABLE(
@@ -541,8 +546,8 @@ STORE `scheming`.`evil` TO `dreaming`.`good`;
         self.assertEqual(ddl.sql, """ALTER TABLE `yep`
   SET DEFAULT `spend` AS 1.25,
   STORE `things` AS `thingies`,
-  STORE `things_for__0____1` AS `thingies_for__0____1`,
-  KIND `thingies_for__0____1` AS STR;
+  STORE `things__for__0____1` AS `thingies__for__0____1`,
+  KIND `thingies__for__0____1` AS STR;
 """)
         self.assertEqual(ddl.args, [])
 
@@ -562,7 +567,7 @@ STORE `scheming`.`evil` TO `dreaming`.`good`;
         )
 
         ddl.generate()
-        self.assertEqual(ddl.sql, """ALTER TABLE `yep` DROP `things`,DROP `things_for__0____1`;\n""")
+        self.assertEqual(ddl.sql, """ALTER TABLE `yep` DROP `things`,DROP `things__for__0____1`;\n""")
         self.assertEqual(ddl.args, [])
 
         ddl = TABLE(
@@ -583,7 +588,7 @@ STORE `scheming`.`evil` TO `dreaming`.`good`;
         ddl.generate(indent=2)
         self.assertEqual(ddl.sql, """ALTER TABLE `yep`
   DROP `things`,
-  DROP `things_for__0____1`;
+  DROP `things__for__0____1`;
 """)
         self.assertEqual(ddl.args, [])
 

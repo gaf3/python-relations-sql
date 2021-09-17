@@ -140,7 +140,7 @@ class TABLE(relations_sql.DDL):
                     if extract not in definition.get("extract"):
                         columns.append(self.COLUMN(
                             migration={
-                                "store": f"{migration.get('store', field)}_{extract}",
+                                "store": f"{migration.get('store', field)}__{extract}",
                                 "kind": migration["extract"][extract]
                             },
                             added=True
@@ -148,11 +148,11 @@ class TABLE(relations_sql.DDL):
                     elif migration["extract"][extract] != definition["extract"][extract]:
                         columns.append(self.COLUMN(
                             migration={
-                                "store": f"{migration.get('store', field)}_{extract}",
+                                "store": f"{migration.get('store', field)}__{extract}",
                                 "kind": migration["extract"][extract]
                             },
                             definition={
-                                "store": f"{definition['store']}_{extract}",
+                                "store": f"{definition['store']}__{extract}",
                                 "kind": definition["extract"][extract]
                             }
                         ))
@@ -161,7 +161,7 @@ class TABLE(relations_sql.DDL):
                     if extract not in migration["extract"]:
                         columns.append(self.COLUMN(
                             definition={
-                                "store": f"{definition['store']}_{extract}",
+                                "store": f"{definition['store']}__{extract}",
                                 "kind": definition["extract"][extract]
                             }
                         ))
@@ -171,11 +171,11 @@ class TABLE(relations_sql.DDL):
                 for extract in sorted(definition["extract"]):
                     columns.append(self.COLUMN(
                         migration={
-                            "store": f"{migration.get('store', field)}_{extract}",
+                            "store": f"{migration.get('store', field)}__{extract}",
                             "kind": definition["extract"][extract]
                         },
                         definition={
-                            "store": f"{definition['store']}_{extract}",
+                            "store": f"{definition['store']}__{extract}",
                             "kind": definition["extract"][extract]
                         }
                     ))
@@ -198,7 +198,7 @@ class TABLE(relations_sql.DDL):
                 for extract in sorted(definition["extract"]):
                     columns.append(self.COLUMN(
                         definition={
-                            "store": f"{definition['store']}_{extract}",
+                            "store": f"{definition['store']}__{extract}",
                             "kind": definition["extract"][extract]
                         }
                     ))
