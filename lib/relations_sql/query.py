@@ -187,6 +187,7 @@ class INSERT(QUERY):
             if clause == "TABLE":
                 if isinstance(table, self.CLAUSES["TABLE"]):
                     self.clauses[clause] = table
+                    table.prefix = self.PREFIX
                 else:
                     self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
             elif clause == "COLUMNS":

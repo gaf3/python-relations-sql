@@ -411,6 +411,12 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.sql,"INSERT INTO `people` (`stuff`,`things`) VALUES (%s,%s),(%s,%s)")
         self.assertEqual(query.args, [1, 2, 3, 4])
 
+        query = INSERT(test_expression.TABLE_NAME("people")).VALUES(stuff=1, things=2).VALUES(3, 4)
+
+        query.generate()
+        self.assertEqual(query.sql,"INSERT INTO `people` (`stuff`,`things`) VALUES (%s,%s),(%s,%s)")
+        self.assertEqual(query.args, [1, 2, 3, 4])
+
         query.generate(indent=2)
         self.assertEqual(query.sql,"""INSERT
 INTO
