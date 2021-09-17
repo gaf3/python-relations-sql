@@ -33,6 +33,13 @@ class DDL(relations_sql.EXPRESSION):
 
         return 1
 
+    def str(self, value):
+        """
+        Outputs string value for DDL
+        """
+
+        return f"{self.STR}{value}{self.STR}"
+
     def generate(self, **kwargs):
 
         self.args = []

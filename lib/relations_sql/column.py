@@ -46,7 +46,7 @@ class COLUMN(relations_sql.DDL):
         if "__" in self.migration["store"]:
 
             name, path = self.COLUMN_NAME.split(self.migration["store"])
-            sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.COLUMN_NAME.walk(path))))
+            sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.COLUMN_NAME.walk(path)))))
 
         else:
 

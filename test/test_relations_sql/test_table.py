@@ -85,7 +85,7 @@ class TestTABLE(unittest.TestCase):
   `people` JSON NOT NULL,
   `stuff` JSON NOT NULL,
   `things` JSON NOT NULL,
-  `things__for__0____1` STR AS `things`#>>$."for"[0]."1"
+  `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"'
 );
 
 CREATE INDEX `meta_spend` ON `meta` (`spend`);
@@ -113,7 +113,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
   `people` JSON NOT NULL,
   `stuff` JSON NOT NULL,
   `things` JSON NOT NULL,
-  `things__for__0____1` STR AS `things`#>>$."for"[0]."1"
+  `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"'
 );
 
 CREATE INDEX `meta_spend` ON `meta` (`spend`);
@@ -477,13 +477,16 @@ STORE `scheming`.`evil` TO `dreaming`.`good`;
         )
 
         ddl.generate()
-        self.assertEqual(ddl.sql, """ALTER TABLE `simple` ADD `things` JSON NOT NULL,ADD `things__for__0____1` STR AS `things`#>>$."for"[0]."1";\n""")
+        self.assertEqual(ddl.sql,
+            """ALTER TABLE `simple` """
+            """ADD `things` JSON NOT NULL,"""
+            """ADD `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"';\n""")
         self.assertEqual(ddl.args, [])
 
         ddl.generate(indent=2)
         self.assertEqual(ddl.sql, """ALTER TABLE `simple`
   ADD `things` JSON NOT NULL,
-  ADD `things__for__0____1` STR AS `things`#>>$."for"[0]."1";
+  ADD `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"';
 """)
         self.assertEqual(ddl.args, [])
 
@@ -619,7 +622,12 @@ STORE `scheming`.`evil` TO `dreaming`.`good`;
         )
 
         ddl.generate()
-        self.assertEqual(ddl.sql, """ALTER TABLE `yep` CREATE INDEX `flag` (`flag`),DROP INDEX `price`,CREATE UNIQUE `flag` (`flag`),DROP INDEX `name`;\n""")
+        self.assertEqual(ddl.sql,
+            """ALTER TABLE `yep` """
+            """CREATE INDEX `flag` (`flag`),"""
+            """DROP INDEX `price`,"""
+            """CREATE UNIQUE `flag` (`flag`),"""
+            """DROP INDEX `name`;\n""")
         self.assertEqual(ddl.args, [])
 
         ddl.generate(indent=2)
