@@ -315,4 +315,4 @@ class TABLE(relations_sql.DDL):
         DROP DLL
         """
 
-        self.sql = f"DROP TABLE {self.name(definition=True)};\n"
+        self.sql = f"DROP TABLE IF EXISTS {self.name(definition=True)};\n"

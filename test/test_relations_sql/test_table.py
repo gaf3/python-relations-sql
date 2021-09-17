@@ -672,5 +672,5 @@ DROP INDEX `yep_name`;
         )
 
         ddl.generate()
-        self.assertEqual(ddl.sql, """DROP TABLE `yep`;\n""")
+        self.assertEqual(ddl.sql, """DROP TABLE IF EXISTS `yep`;\n""")
         self.assertEqual(ddl.args, [])
