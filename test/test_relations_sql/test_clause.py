@@ -607,23 +607,17 @@ class TestLIMIT(unittest.TestCase):
 
         clause(10, 5)
         clause.generate()
-        self.assertEqual(clause.sql, """LIMIT %s,%s""")
+        self.assertEqual(clause.sql, """LIMIT %s OFFSET %s""")
         self.assertEqual(clause.args, [10, 5])
 
         clause.generate(indent=2)
-        self.assertEqual(clause.sql, """LIMIT
-  %s,
-  %s""")
+        self.assertEqual(clause.sql, """LIMIT %s OFFSET %s""")
 
         clause.generate(indent=2, count=1)
-        self.assertEqual(clause.sql, """LIMIT
-    %s,
-    %s""")
+        self.assertEqual(clause.sql, """LIMIT %s OFFSET %s""")
 
         clause.generate(indent=2, count=2)
-        self.assertEqual(clause.sql, """LIMIT
-      %s,
-      %s""")
+        self.assertEqual(clause.sql, """LIMIT %s OFFSET %s""")
 
 
 class SET(relations_sql.SET):

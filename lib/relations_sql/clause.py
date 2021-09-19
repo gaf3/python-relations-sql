@@ -172,6 +172,8 @@ class LIMIT(CLAUSE):
 
     ARGS = relations_sql.VALUE
 
+    DELIMITTER = " OFFSET "
+
     def add(self, *args, total=None, offset=None):
         """
         Add total and offset
@@ -201,6 +203,13 @@ class LIMIT(CLAUSE):
             self.expressions.append(self.ARGS(offset))
 
         return self.query or self
+
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
+        """
+        Concats the values
+        """
+
+        super().generate(**kwargs)
 
 
 class SET(CLAUSE):
