@@ -694,18 +694,18 @@ class TestVALUES(unittest.TestCase):
 
         query.column.side_effect = column
 
-        clause.column([1, 2, 3])
-        self.assertEqual(clause.columns, [1, 2, 3])
-        query.column.assert_called_once_with([1, 2, 3])
+        clause.column(['1', '2', '3'])
+        self.assertEqual(clause.columns, ['1', '2', '3'])
+        query.column.assert_called_once_with(['1', '2', '3'])
 
-        clause.column([4, 5, 6])
-        self.assertEqual(clause.columns, [1, 2, 3])
-        query.column.assert_called_once_with([1, 2, 3])
+        clause.column(['4', '5', '6'])
+        self.assertEqual(clause.columns, ['1', '2', '3'])
+        query.column.assert_called_once_with(['1', '2', '3'])
 
         clause = VALUES()
 
-        clause.column([4, 5, 6])
-        self.assertEqual(clause.columns, [4, 5, 6])
+        clause.column(['4', '5', '6'])
+        self.assertEqual(clause.columns, ['4', '5', '6'])
 
     def test_add(self):
 
@@ -720,9 +720,9 @@ class TestVALUES(unittest.TestCase):
 
         query.column.side_effect = column
 
-        clause.add(4, 5, 6, COLUMNS=[1, 2, 3])
-        self.assertEqual(clause.columns, [1, 2, 3])
-        query.column.assert_called_once_with([1, 2, 3])
+        clause.add(4, 5, 6, COLUMNS=['1', '2', '3'])
+        self.assertEqual(clause.columns, ['1', '2', '3'])
+        query.column.assert_called_once_with(['1', '2', '3'])
         self.assertIsInstance(clause.expressions[0], test_expression.LIST)
         self.assertIsInstance(clause.expressions[0].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[0].expressions[1], test_expression.VALUE)
@@ -731,9 +731,9 @@ class TestVALUES(unittest.TestCase):
         self.assertEqual(clause.expressions[0].expressions[1].value, 5)
         self.assertEqual(clause.expressions[0].expressions[2].value, 6)
 
-        clause.add(7, 8, 9, COLUMNS=[10])
-        self.assertEqual(clause.columns, [1, 2, 3])
-        query.column.assert_called_once_with([1, 2, 3])
+        clause.add(7, 8, 9, COLUMNS=['10'])
+        self.assertEqual(clause.columns, ['1', '2', '3'])
+        query.column.assert_called_once_with(['1', '2', '3'])
         self.assertIsInstance(clause.expressions[1], test_expression.LIST)
         self.assertIsInstance(clause.expressions[1].expressions[0], test_expression.VALUE)
         self.assertIsInstance(clause.expressions[1].expressions[1], test_expression.VALUE)

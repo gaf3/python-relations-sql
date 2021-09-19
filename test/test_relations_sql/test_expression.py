@@ -549,7 +549,7 @@ class TestNAMES(unittest.TestCase):
 
 class COLUMN_NAMES(test_sql.SQL, relations_sql.COLUMN_NAMES):
 
-    ARG = NAME
+    ARG = COLUMN_NAME
 
 class TestCOLUMN_NAMES(unittest.TestCase):
 
@@ -557,11 +557,13 @@ class TestCOLUMN_NAMES(unittest.TestCase):
 
     def test___init__(self):
 
-        expression = COLUMN_NAMES(["unit", relations_sql.SQL("test")])
-        self.assertIsInstance(expression.expressions[0], NAME)
+        expression = COLUMN_NAMES(["unit", "unit__test", relations_sql.SQL("test")])
+        self.assertIsInstance(expression.expressions[0], COLUMN_NAME)
         self.assertEqual(expression.expressions[0].name, "unit")
-        self.assertIsInstance(expression.expressions[1], relations_sql.SQL)
-        self.assertEqual(expression.expressions[1].sql, """test""")
+        self.assertIsInstance(expression.expressions[1], COLUMN_NAME)
+        self.assertEqual(expression.expressions[1].name, "unit__test")
+        self.assertIsInstance(expression.expressions[2], relations_sql.SQL)
+        self.assertEqual(expression.expressions[2].sql, """test""")
 
     def test_generate(self):
 

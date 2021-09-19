@@ -322,6 +322,16 @@ class COLUMN_NAMES(NAMES):
 
     ARG = COLUMN_NAME
 
+    def __init__(self, expressions):
+
+        self.expressions = []
+
+        for expression in expressions:
+            if isinstance(expression, relations_sql.SQL):
+                self.expressions.append(expression)
+            else:
+                self.expressions.append(self.ARG(expression, extracted=True))
+
     def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
         Generates the sql and args
