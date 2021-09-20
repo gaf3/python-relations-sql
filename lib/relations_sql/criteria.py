@@ -130,13 +130,13 @@ class ANY(SETS):
     VALUE = relations_sql.VALUE
     CONTAINS = relations_sql.CONTAINS
 
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
         if kwargs:
             left, right = list(kwargs.items())[0]
 
         if not isinstance(left, relations_sql.SQL):
-            left = self.LEFT(left, jsonify=jsonify)
+            left = self.LEFT(left, jsonify=jsonify, extracted=extracted)
 
         if not isinstance(right, list):
             raise relations_sql.SQLError(self, f"right {right} must be list")
@@ -153,9 +153,12 @@ class ALL(SETS):
     CONTAINS = relations_sql.CONTAINS
     LENGTHS = relations_sql.LENGTHS
 
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
-        self.expression = self.AND(self.CONTAINS(left, right, jsonify, **kwargs), self.LENGTHS(left, right, jsonify, **kwargs))
+        self.expression = self.AND(
+            self.CONTAINS(left, right, invert=invert, jsonify=jsonify, extracted=extracted, **kwargs),
+            self.LENGTHS(left, right, invert=invert, jsonify=jsonify, extracted=extracted, **kwargs)
+        )
 
 
 class OP:

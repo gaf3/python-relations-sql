@@ -470,4 +470,22 @@ class TestOP(unittest.TestCase):
         self.assertEqual(criteria.sql, """`totes__a` IS NOT NULL""")
         self.assertEqual(criteria.args, [])
 
+        criteria = OP(totes__a__has=1, EXTRACTED=True)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, """CONTAINS(`totes__a`,%s)""")
+        self.assertEqual(criteria.args, [1])
+
+        criteria = OP(totes__a__any=[1, 2], EXTRACTED=True)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, """(CONTAINS(`totes__a`,JSON(%s)) OR CONTAINS(`totes__a`,JSON(%s)))""")
+        self.assertEqual(criteria.args, ['[1]', '[2]'])
+
+        criteria = OP(totes__a__all=[1, 2], EXTRACTED=True)
+
+        criteria.generate()
+        self.assertEqual(criteria.sql, """(CONTAINS(`totes__a`,JSON(%s)) AND LENGTHS(`totes__a`,JSON(%s)))""")
+        self.assertEqual(criteria.args, ['[1, 2]', '[1, 2]'])
+
         self.assertRaisesRegex(relations_sql.SQLError, "need single pair", OP, "nope")

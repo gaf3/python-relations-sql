@@ -647,6 +647,24 @@ class TestDELETE(unittest.TestCase):
 
     maxDiff = None
 
+    def test___init__(self):
+
+        query = DELETE("people.stuff", LIMIT=5)
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.LIMIT.expressions[0].value, 5)
+
+        table = test_expression.TABLE_NAME("people.stuff")
+        limit = test_clause.LIMIT(5)
+        query = DELETE(table, LIMIT=limit)
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.LIMIT.expressions[0].value, 5)
+
+        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for DELETE", DELETE, "table", nope=False)
+
     def test___call__(self):
 
         query = DELETE("nope").WHERE(things="stuff")

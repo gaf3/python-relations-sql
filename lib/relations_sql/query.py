@@ -296,3 +296,23 @@ class DELETE(LIMITED):
         ("ORDER_BY", relations_sql.ORDER_BY),
         ("LIMIT", relations_sql.LIMIT)
     ])
+
+    def __init__(self, table, **kwargs): # pylint: disable=too-many-branches
+
+        self.check(kwargs)
+
+        for clause in self.CLAUSES:
+            if clause == "TABLE":
+                if isinstance(table, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = table
+                    table.prefix = self.PREFIX
+                else:
+                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+            else:
+                if clause in kwargs:
+                    if isinstance(kwargs[clause], self.CLAUSES[clause]):
+                        self.clauses[clause] = kwargs[clause].bind(self)
+                    else:
+                        self.clauses[clause] = self.CLAUSES[clause](kwargs[clause]).bind(self)
+                else:
+                    self.clauses[clause] = self.CLAUSES[clause]().bind(self)
