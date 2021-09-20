@@ -68,6 +68,11 @@ class TestVALUE(unittest.TestCase):
 
     def test_generate(self):
 
+        expression = VALUE(None)
+        expression.generate()
+        self.assertEqual(expression.sql, """%s""")
+        self.assertEqual(expression.args, [None])
+
         expression = VALUE("unit")
         expression.generate()
         self.assertEqual(expression.sql, """%s""")

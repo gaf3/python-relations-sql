@@ -49,7 +49,7 @@ class VALUE(EXPRESSION):
     def __init__(self, value, jsonify=False):
 
         self.value = value
-        self.jsonify = jsonify or not isinstance(value, (bool, int, float, str))
+        self.jsonify = jsonify or (value is not None and not isinstance(value, (bool, int, float, str)))
 
     def __len__(self):
 
