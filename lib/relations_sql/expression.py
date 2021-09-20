@@ -59,7 +59,7 @@ class VALUE(EXPRESSION):
 
         if self.jsonify:
             self.sql = self.JSONIFY % self.PLACEHOLDER
-            self.args = [json.dumps(self.value)]
+            self.args = [json.dumps(sorted(list(self.value)) if isinstance(self.value, set) else self.value)]
         else:
             self.sql = self.PLACEHOLDER
             self.args = [self.value]

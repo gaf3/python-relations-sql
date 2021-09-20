@@ -88,6 +88,11 @@ class TestVALUE(unittest.TestCase):
         self.assertEqual(expression.sql, """JSON(%s)""")
         self.assertEqual(expression.args, ['{"a": 1}'])
 
+        expression = VALUE({'a', 'b'})
+        expression.generate()
+        self.assertEqual(expression.sql, """JSON(%s)""")
+        self.assertEqual(expression.args, ['["a", "b"]'])
+
 
 class NOT(test_sql.SQL, relations_sql.NOT):
 
