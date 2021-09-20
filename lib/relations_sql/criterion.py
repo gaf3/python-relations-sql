@@ -32,9 +32,6 @@ class CRITERION(relations_sql.EXPRESSION):
         if not isinstance(left, relations_sql.SQL):
             left = self.LEFT(left, jsonify=jsonify, extracted=extracted)
 
-        if isinstance(left, relations_sql.COLUMN_NAME) and left.path:
-            jsonify = True
-
         if not isinstance(right, relations_sql.SQL):
             right = self.RIGHT(right, jsonify=jsonify)
 
