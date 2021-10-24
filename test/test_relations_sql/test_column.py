@@ -22,6 +22,7 @@ class COLUMN(test_ddl.DDL, relations_sql.COLUMN):
 
     STORE = "STORE %s AS %s"
     KIND = "KIND %s AS %s"
+    AUTO = "AUTO"
     EXTRACT = "AS %s"
     SET_DEFAULT = "SET DEFAULT %s AS %s"
     UNSET_DEFAULT = "UNSET DEFAULT %s"
@@ -48,11 +49,11 @@ class TestCOLUMN(unittest.TestCase):
         ddl.create()
         self.assertEqual(ddl.sql, """`flag` BOOL""")
 
-        field = relations.Field(int, name="id")
+        field = relations.Field(int, name="id", auto=True)
         ddl = COLUMN(field.define())
 
         ddl.create()
-        self.assertEqual(ddl.sql, """`id` INT""")
+        self.assertEqual(ddl.sql, """`id` INT AUTO""")
 
         field = relations.Field(float, "price", store="_price", default=1.25, none=False)
         ddl = COLUMN(field.define())

@@ -19,6 +19,7 @@ class COLUMN(relations_sql.DDL):
 
     STORE = None
     KIND = None
+    AUTO = None
     EXTRACT = None
     SET_DEFAULT = None
     UNSET_DEFAULT = None
@@ -52,6 +53,9 @@ class COLUMN(relations_sql.DDL):
 
             if not self.migration.get('none'):
                 sql.append("NOT NULL")
+
+            if self.migration.get('auto'):
+                sql.append(self.AUTO)
 
             if self.migration.get('default') is not None:
                 if isinstance(self.migration.get('default'), (bool, int, float, str)):
