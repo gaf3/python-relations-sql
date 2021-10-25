@@ -23,15 +23,21 @@ class TABLE(relations_sql.DDL):
     STORE = None
     PRIMARY = None
 
-    def name(self, definition=False):
+    def name(self, state="migration"):
         """
         Generate a quoted name, with table as the default
         """
 
-        state = self.definition if definition or "store" not in self.migration else self.migration
-        name = state['store']
+        if isinstance(state, str):
+            state = {
+                "name": state,
+                "schema": state
+            }
 
-        table = self.NAME(name, schema=state.get("schema"))
+        store = (self.definition if state["name"] == "definition" or "store" not in self.migration else self.migration)["store"]
+        schema = (self.definition if state["schema"] == "definition" else self.migration).get("schema")
+
+        table = self.NAME(store, schema=schema)
 
         table.generate()
 
@@ -249,7 +255,7 @@ class TABLE(relations_sql.DDL):
         """
 
         if self.SCHEMA:
-            sql.append(self.SCHEMA % (self.name(definition=True), self.quote(self.definition.get("schema"))))
+            sql.append(self.SCHEMA % (self.name(state="definition"), self.quote(self.migration["schema"])))
         else:
             raise relations_sql.SQLError(self, "schema change not supported")
 
@@ -259,7 +265,7 @@ class TABLE(relations_sql.DDL):
         """
 
         if self.STORE:
-            sql.append(self.STORE % (self.name(definition=True), self.name()))
+            sql.append(self.STORE % (self.name(state={"name": "definition", "schema": "migration"}), self.name()))
         else:
             raise relations_sql.SQLError(self, "store change not supported")
 
@@ -319,4 +325,4 @@ class TABLE(relations_sql.DDL):
         DROP DLL
         """
 
-        self.sql = f"DROP TABLE IF EXISTS {self.name(definition=True)};\n"
+        self.sql = f"DROP TABLE IF EXISTS {self.name(state='definition')};\n"

@@ -57,14 +57,11 @@ class TestTABLE(unittest.TestCase):
 
     def test_name(self):
 
-        ddl = TABLE(schema="people", name="stuff", definition={"name": "things"})
+        ddl = TABLE(schema="people", name="stuff", definition={"schema": "persons", "name": "things"})
 
         self.assertEqual(ddl.name(), """`people`.`stuff`""")
-        self.assertEqual(ddl.name(definition=True), """`things`""")
-
-        ddl = TABLE(schema="people", definition={"name": "things"})
-
-        self.assertEqual(ddl.name(), """`things`""")
+        self.assertEqual(ddl.name(state="definition"), """`persons`.`things`""")
+        self.assertEqual(ddl.name(state={"name": "definition", "schema": "migration"}), """`people`.`things`""")
 
     def test_create(self):
 
@@ -404,7 +401,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         )
 
         ddl.schema(sql)
-        self.assertEqual(sql, ["""SCHEMA `scheming`.`evil` TO `scheming`"""])
+        self.assertEqual(sql, ["""SCHEMA `scheming`.`evil` TO `dreaming`"""])
 
         ddl = LOCKED(
             migration={
@@ -435,7 +432,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         )
 
         ddl.store(sql)
-        self.assertEqual(sql, ["""STORE `scheming`.`evil` TO `dreaming`.`good`"""])
+        self.assertEqual(sql, ["""STORE `dreaming`.`evil` TO `dreaming`.`good`"""])
 
         ddl = LOCKED(
             migration={
@@ -464,9 +461,9 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         )
 
         ddl.generate()
-        self.assertEqual(ddl.sql, """SCHEMA `scheming`.`evil` TO `scheming`;
+        self.assertEqual(ddl.sql, """SCHEMA `scheming`.`evil` TO `dreaming`;
 
-STORE `scheming`.`evil` TO `dreaming`.`good`;
+STORE `dreaming`.`evil` TO `dreaming`.`good`;
 """)
         self.assertEqual(ddl.args, [])
 
