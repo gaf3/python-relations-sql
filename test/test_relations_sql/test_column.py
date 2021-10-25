@@ -158,6 +158,14 @@ class TestCOLUMN(unittest.TestCase):
         ddl.default(sql)
         self.assertEqual(sql, ["""SET DEFAULT `name` AS 'Willy'"""])
 
+        field = relations.Field(dict, store="meta", default={"a": 1})
+
+        definition = {}
+        ddl = COLUMN(field.define(), definition)
+        sql = []
+        ddl.default(sql)
+        self.assertEqual(sql, ["""SET DEFAULT `meta` AS '{"a": 1}'"""])
+
         field = relations.Field(str, store="name")
 
         definition = {

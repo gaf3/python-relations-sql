@@ -93,7 +93,10 @@ class COLUMN(relations_sql.DDL):
         Modifies the default
         """
         if self.migration.get("default") is not None:
-            default = self.migration["default"]
+            if isinstance(self.migration.get('default'), (bool, int, float, str)):
+                default = self.migration.get('default')
+            else:
+                default = json.dumps(self.migration.get('default'))
             quote = self.STR if isinstance(default, str) else ''
             sql.append(self.SET_DEFAULT % (self.name(), f"{quote}{default}{quote}"))
         else:
