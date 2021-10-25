@@ -21,6 +21,7 @@ class TABLE(relations_sql.DDL):
 
     SCHEMA = None
     STORE = None
+    PRIMARY = None
 
     def name(self, definition=False):
         """
@@ -56,6 +57,9 @@ class TABLE(relations_sql.DDL):
                     columns.append(self.COLUMN(store=f"{store}__{extract}", kind=migration["extract"][extract]))
 
         table = {} if self.INDEXES else {"table": self.migration["name"], "schema": self.migration.get("schema")}
+
+        if self.migration.get('id') is not None and self.PRIMARY:
+            columns.append(relations_sql.SQL(self.PRIMARY % self.quote(self.migration['id'])))
 
         for index in sorted(self.migration.get("index", {})):
             indexes.append(self.INDEX(name=index, columns=self.migration["index"][index], **table))

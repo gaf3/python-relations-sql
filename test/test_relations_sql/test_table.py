@@ -36,6 +36,7 @@ class TABLE(test_ddl.DDL, relations_sql.TABLE):
 
     SCHEMA = "SCHEMA %s TO %s"
     STORE = "STORE %s TO %s"
+    PRIMARY = "PRIMARY (%s)"
 
 class INSIDE(TABLE):
 
@@ -71,7 +72,7 @@ class TestTABLE(unittest.TestCase):
         ddl.args = []
 
         ddl.create()
-        self.assertEqual(ddl.sql, """CREATE TABLE IF NOT EXISTS `simple` (`id` INT,`name` STR NOT NULL,UNIQUE `name` (`name`));\n""")
+        self.assertEqual(ddl.sql, """CREATE TABLE IF NOT EXISTS `simple` (`id` INT,`name` STR NOT NULL,PRIMARY (`id`),UNIQUE `name` (`name`));\n""")
 
         ddl = OUTSIDE(**Meta.thy().define())
         ddl.args = []
@@ -85,7 +86,8 @@ class TestTABLE(unittest.TestCase):
   `people` JSON NOT NULL,
   `stuff` JSON NOT NULL,
   `things` JSON NOT NULL,
-  `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"'
+  `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"',
+  PRIMARY (`id`)
 );
 
 CREATE INDEX `meta_spend` ON `meta` (`spend`);
@@ -99,7 +101,7 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
         ddl.args = []
 
         ddl.add()
-        self.assertEqual(ddl.sql, """CREATE TABLE IF NOT EXISTS `simple` (`id` INT,`name` STR NOT NULL,UNIQUE `name` (`name`));\n""")
+        self.assertEqual(ddl.sql, """CREATE TABLE IF NOT EXISTS `simple` (`id` INT,`name` STR NOT NULL,PRIMARY (`id`),UNIQUE `name` (`name`));\n""")
 
         ddl = OUTSIDE(**Meta.thy().define())
         ddl.args = []
@@ -113,7 +115,8 @@ CREATE UNIQUE `meta_name` ON `meta` (`name`);
   `people` JSON NOT NULL,
   `stuff` JSON NOT NULL,
   `things` JSON NOT NULL,
-  `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"'
+  `things__for__0____1` STR AS `things`#>>'$."for"[0]."1"',
+  PRIMARY (`id`)
 );
 
 CREATE INDEX `meta_spend` ON `meta` (`spend`);
