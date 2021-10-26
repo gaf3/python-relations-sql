@@ -265,6 +265,18 @@ class SETS(test_criterion.SQL, relations_sql.SETS):
 
 class TestSETS(unittest.TestCase):
 
+    def test___len__(self):
+
+        criteria = SETS("totes", ["mai", "goats"])
+
+        self.assertEqual(len(criteria), 1)
+
+    def test_ensure(self):
+
+        self.assertEqual(SETS.ensure(1), [1])
+        self.assertEqual(SETS.ensure({1}), {1})
+        self.assertEqual(SETS.ensure([1]), [1])
+
     def test_generate(self):
 
         criteria = SETS("totes", ["mai", "goats"])
@@ -290,19 +302,13 @@ class TestHAS(unittest.TestCase):
         self.assertEqual(criteria.expression.left.name, "totes")
         self.assertEqual(criteria.expression.right.value, ["mai", "goats"])
 
-        criteria = HAS(totes=["mai", "goats"])
+        criteria = HAS(totes="goats")
 
         self.assertIsInstance(criteria.expression, test_criterion.CONTAINS)
         self.assertIsInstance(criteria.expression.left, test_expression.COLUMN_NAME)
         self.assertIsInstance(criteria.expression.right, test_expression.VALUE)
         self.assertEqual(criteria.expression.left.name, "totes")
-        self.assertEqual(criteria.expression.right.value, ["mai", "goats"])
-
-    def test___len__(self):
-
-        criteria = HAS("totes", ["mai", "goats"])
-
-        self.assertEqual(len(criteria), 1)
+        self.assertEqual(criteria.expression.right.value, ["goats"])
 
     def test_generate(self):
 
@@ -338,21 +344,14 @@ class TestANY(unittest.TestCase):
         self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
         self.assertEqual(criteria.expression.expressions[1].right.value, ["goats"])
 
-        criteria = ANY(totes=["mai", "goats"])
+        criteria = ANY(totes="goats")
 
         self.assertIsInstance(criteria.expression, OR)
         self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
-        self.assertIsInstance(criteria.expression.expressions[1], test_criterion.CONTAINS)
         self.assertIsInstance(criteria.expression.expressions[0].left, test_expression.COLUMN_NAME)
         self.assertIsInstance(criteria.expression.expressions[0].right, test_expression.VALUE)
-        self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.COLUMN_NAME)
-        self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
         self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
-        self.assertEqual(criteria.expression.expressions[0].right.value, ["mai"])
-        self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
-        self.assertEqual(criteria.expression.expressions[1].right.value, ["goats"])
-
-        self.assertRaisesRegex(relations_sql.SQLError, "must be list", ANY, totes="mai goats")
+        self.assertEqual(criteria.expression.expressions[0].right.value, ["goats"])
 
     def test_generate(self):
 
@@ -387,7 +386,7 @@ class TestALL(unittest.TestCase):
         self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
         self.assertEqual(criteria.expression.expressions[1].right.value, ["mai", "goats"])
 
-        criteria = ALL(totes=["mai", "goats"])
+        criteria = ALL(totes="goats")
 
         self.assertIsInstance(criteria.expression, AND)
         self.assertIsInstance(criteria.expression.expressions[0], test_criterion.CONTAINS)
@@ -397,9 +396,9 @@ class TestALL(unittest.TestCase):
         self.assertIsInstance(criteria.expression.expressions[1].left, test_expression.COLUMN_NAME)
         self.assertIsInstance(criteria.expression.expressions[1].right, test_expression.VALUE)
         self.assertEqual(criteria.expression.expressions[0].left.name, "totes")
-        self.assertEqual(criteria.expression.expressions[0].right.value, ["mai", "goats"])
+        self.assertEqual(criteria.expression.expressions[0].right.value, "goats")
         self.assertEqual(criteria.expression.expressions[1].left.name, "totes")
-        self.assertEqual(criteria.expression.expressions[1].right.value, ["mai", "goats"])
+        self.assertEqual(criteria.expression.expressions[1].right.value, "goats")
 
     def test_generate(self):
 
@@ -473,8 +472,8 @@ class TestOP(unittest.TestCase):
         criteria = OP(totes__a__has=1, EXTRACTED=True)
 
         criteria.generate()
-        self.assertEqual(criteria.sql, """CONTAINS(`totes__a`,%s)""")
-        self.assertEqual(criteria.args, [1])
+        self.assertEqual(criteria.sql, """CONTAINS(`totes__a`,JSON(%s))""")
+        self.assertEqual(criteria.args, ["[1]"])
 
         criteria = OP(totes__a__any=[1, 2], EXTRACTED=True)
 
