@@ -22,6 +22,10 @@ class CRITERIONLY(SQL, relations_sql.CRITERION):
 
     OPERAND = "%s CRITERIONLY %s"
 
+class CRITERIONCAST(CRITERION):
+
+    CAST = True
+
 class TestCRITERION(unittest.TestCase):
 
     maxDiff = None
@@ -70,6 +74,26 @@ class TestCRITERION(unittest.TestCase):
         self.assertFalse(criterion.right.jsonify)
 
         self.assertRaisesRegex(relations_sql.SQLError, "no invert without INVERT operand", CRITERIONLY, invert=True)
+
+        criterion = CRITERIONCAST(totes__a="maigoats", extracted=True)
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes__a")
+        self.assertEqual(criterion.left.path, [])
+        self.assertFalse(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertFalse(criterion.right.jsonify)
+
+        criterion = CRITERIONCAST(totes__a="maigoats")
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes")
+        self.assertEqual(criterion.left.path, ["a"])
+        self.assertTrue(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertTrue(criterion.right.jsonify)
 
     def test___len__(self):
 

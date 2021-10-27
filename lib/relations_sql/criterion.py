@@ -17,6 +17,7 @@ class CRITERION(relations_sql.EXPRESSION):
     OPERAND = None # OPERAND to use as format string (if any)
     INVERT = None # OPERAND to use as format string (if not)
     PARENTHESES = False
+    CAST = False
 
     left = None    # Left expression
     right = None   # Right expression
@@ -31,6 +32,9 @@ class CRITERION(relations_sql.EXPRESSION):
 
         if not isinstance(left, relations_sql.SQL):
             left = self.LEFT(left, jsonify=jsonify, extracted=extracted)
+
+            if self.CAST and isinstance(left, relations_sql.COLUMN_NAME) and left.path:
+                left.jsonify = jsonify = True
 
         if not isinstance(right, relations_sql.SQL):
             right = self.RIGHT(right, jsonify=jsonify)
