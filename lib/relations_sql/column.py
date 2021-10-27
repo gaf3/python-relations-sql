@@ -35,12 +35,12 @@ class COLUMN(relations_sql.DDL):
 
         return self.quote(state['store'])
 
-    def extract(self, sql, **kwargs):
+    def extract(self, kind, sql, **kwargs):
         """
         Get extract DDL
         """
 
-        sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
+        sql.append(self.KINDS.get(kind, self.KINDS["json"]))
 
         name, path = self.COLUMN_NAME.split(self.migration["store"])
         sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.COLUMN_NAME.walk(path)))))
@@ -54,7 +54,7 @@ class COLUMN(relations_sql.DDL):
 
         if "__" in self.migration["store"]:
 
-            self.extract(sql, **kwargs)
+            self.extract(self.migration['kind'], sql, **kwargs)
 
         else:
 

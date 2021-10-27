@@ -47,7 +47,7 @@ class TestCOLUMN(unittest.TestCase):
 
         sql = []
 
-        ddl.extract(sql)
+        ddl.extract("str", sql)
         self.assertEqual(sql, ["""STR""", """AS `data`#>>'$."a"[0][-1]."2"."-3"'"""])
 
     def test_create(self):
