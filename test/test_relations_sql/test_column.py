@@ -41,6 +41,15 @@ class TestCOLUMN(unittest.TestCase):
         self.assertEqual(ddl.name(), """`_flag`""")
         self.assertEqual(ddl.name(definition=True), """`football`""")
 
+    def test_extract(self):
+
+        ddl = COLUMN(store="data__a__0___1____2_____3", kind="str")
+
+        sql = []
+
+        ddl.extract(sql)
+        self.assertEqual(sql, ["""STR""", """AS `data`#>>'$."a"[0][-1]."2"."-3"'"""])
+
     def test_create(self):
 
         field = relations.Field(bool, name="flag")

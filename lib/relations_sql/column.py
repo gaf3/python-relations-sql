@@ -35,6 +35,16 @@ class COLUMN(relations_sql.DDL):
 
         return self.quote(state['store'])
 
+    def extract(self, sql, **kwargs):
+        """
+        Get extract DDL
+        """
+
+        sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
+
+        name, path = self.COLUMN_NAME.split(self.migration["store"])
+        sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.COLUMN_NAME.walk(path)))))
+
     def create(self, **kwargs):
         """
         CREATE DLL
@@ -44,10 +54,7 @@ class COLUMN(relations_sql.DDL):
 
         if "__" in self.migration["store"]:
 
-            sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
-
-            name, path = self.COLUMN_NAME.split(self.migration["store"])
-            sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.COLUMN_NAME.walk(path)))))
+            self.extract(sql, **kwargs)
 
         else:
 
