@@ -42,20 +42,25 @@ class COLUMN(relations_sql.DDL):
 
         sql = [self.name()]
 
-        sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
-
         if "__" in self.migration["store"]:
+
+            sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
 
             name, path = self.COLUMN_NAME.split(self.migration["store"])
             sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.COLUMN_NAME.walk(path)))))
 
         else:
 
-            if not self.migration.get('none'):
-                sql.append("NOT NULL")
-
             if self.migration.get('auto'):
+
                 sql.append(self.AUTO)
+
+            else:
+
+                sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
+
+                if not self.migration.get('none'):
+                    sql.append("NOT NULL")
 
             if self.migration.get('default') is not None:
                 if isinstance(self.migration.get('default'), (bool, int, float, str)):

@@ -53,7 +53,7 @@ class TestCOLUMN(unittest.TestCase):
         ddl = COLUMN(field.define())
 
         ddl.create()
-        self.assertEqual(ddl.sql, """`id` INT AUTO""")
+        self.assertEqual(ddl.sql, """`id` AUTO""")
 
         field = relations.Field(float, "price", store="_price", default=1.25, none=False)
         ddl = COLUMN(field.define())
