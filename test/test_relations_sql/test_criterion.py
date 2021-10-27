@@ -22,9 +22,13 @@ class CRITERIONLY(SQL, relations_sql.CRITERION):
 
     OPERAND = "%s CRITERIONLY %s"
 
+class CRITERIONJSONPATH(CRITERION):
+
+    JSONPATH = True
+
 class CRITERIONCAST(CRITERION):
 
-    CAST = True
+    CAST = "CAST(%s)"
 
 class TestCRITERION(unittest.TestCase):
 
@@ -75,6 +79,26 @@ class TestCRITERION(unittest.TestCase):
 
         self.assertRaisesRegex(relations_sql.SQLError, "no invert without INVERT operand", CRITERIONLY, invert=True)
 
+        criterion = CRITERIONJSONPATH(totes__a="maigoats", extracted=True)
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes__a")
+        self.assertEqual(criterion.left.path, [])
+        self.assertFalse(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertFalse(criterion.right.jsonify)
+
+        criterion = CRITERIONJSONPATH(totes__a="maigoats")
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes")
+        self.assertEqual(criterion.left.path, ["a"])
+        self.assertTrue(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertTrue(criterion.right.jsonify)
+
         criterion = CRITERIONCAST(totes__a="maigoats", extracted=True)
 
         self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
@@ -90,10 +114,10 @@ class TestCRITERION(unittest.TestCase):
         self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
         self.assertEqual(criterion.left.name, "totes")
         self.assertEqual(criterion.left.path, ["a"])
-        self.assertTrue(criterion.left.jsonify)
+        self.assertFalse(criterion.left.jsonify)
         self.assertIsInstance(criterion.right, test_expression.VALUE)
         self.assertEqual(criterion.right.value, "maigoats")
-        self.assertTrue(criterion.right.jsonify)
+        self.assertFalse(criterion.right.jsonify)
 
     def test___len__(self):
 
@@ -119,6 +143,12 @@ class TestCRITERION(unittest.TestCase):
 
         criterion.generate()
         self.assertEqual(criterion.sql, """`totes`#>>%s CRIERION %s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
+
+        criterion = CRITERIONCAST(totes__a="maigoats")
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """CAST(`totes`#>>%s) CRIERION CAST(%s)""")
         self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
         criterion = CRITERION(totes=test_expression.LIST([1, 2, 3]))
