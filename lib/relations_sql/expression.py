@@ -288,13 +288,16 @@ class COLUMN_NAME(TABLE_NAME):
 
         self.args = []
 
-        column = self.JSONIFY % self.column() if self.jsonify else self.column(**kwargs)
+        column = self.column(**kwargs)
 
         if self.path:
             self.sql = self.PATH % (column, self.PLACEHOLDER)
             self.args.append(self.walk(self.path))
         else:
             self.sql = column
+
+        if self.jsonify:
+            self.sql = self.JSONIFY % self.sql
 
 
 class NAMES(LIST):
