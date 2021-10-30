@@ -26,6 +26,10 @@ class CRITERIONJSONPATH(CRITERION):
 
     JSONPATH = True
 
+class CRITERIONREVERSE(CRITERION):
+
+    REVERSE = True
+
 class CRITERIONCAST(CRITERION):
 
     CAST = "CAST(%s)"
@@ -137,6 +141,12 @@ class TestCRITERION(unittest.TestCase):
 
         criterion.generate()
         self.assertEqual(criterion.sql, """`totes` CRIERIOFF %s""")
+        self.assertEqual(criterion.args, ["maigoats"])
+
+        criterion = CRITERIONREVERSE("totes", "maigoats")
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """%s CRIERION `totes`""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = CRITERION(totes__a="maigoats")

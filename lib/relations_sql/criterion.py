@@ -18,6 +18,7 @@ class CRITERION(relations_sql.EXPRESSION):
     INVERT = None # OPERAND to use as format string (if not)
     PARENTHESES = False
     JSONPATH = False
+    REVERSE = False
     CAST = None
 
     left = None    # Left expression
@@ -69,7 +70,12 @@ class CRITERION(relations_sql.EXPRESSION):
         if self.CAST:
             sql = [self.CAST % expression for expression in sql]
 
-        self.sql = operand % (sql[0], f"{left}{sql[1]}{right}")
+        arguments = [sql[0], f"{left}{sql[1]}{right}"]
+
+        if self.REVERSE:
+            arguments.reverse()
+
+        self.sql = operand % tuple(arguments)
 
 
 class NULL(CRITERION):
