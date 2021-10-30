@@ -387,19 +387,6 @@ class COLUMN_NAME(test_sql.SQL, relations_sql.COLUMN_NAME):
 
     TABLE_NAME = TABLE_NAME
 
-    @staticmethod
-    def walk(path):
-
-        places = []
-
-        for place in path:
-            if isinstance(place, int):
-                places.append(f"[{int(place)}]")
-            else:
-                places.append(f'."{place}"')
-
-        return f"${''.join(places)}"
-
 class TestCOLUMN_NAME(unittest.TestCase):
 
     maxDiff = None

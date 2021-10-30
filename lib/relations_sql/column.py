@@ -43,7 +43,7 @@ class COLUMN(relations_sql.DDL):
         sql.append(self.KINDS.get(kind, self.KINDS["json"]))
 
         name, path = self.COLUMN_NAME.split(self.migration["store"])
-        sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.COLUMN_NAME.walk(path)))))
+        sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.walk(path)))))
 
     def create(self, **kwargs):
         """

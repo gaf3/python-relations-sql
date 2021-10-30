@@ -13,6 +13,19 @@ class SQL:
     JSONIFY = "JSON(%s)"
     PATH = "%s#>>%s"
 
+    @staticmethod
+    def walk(path):
+
+        places = []
+
+        for place in path:
+            if isinstance(place, int):
+                places.append(f"[{int(place)}]")
+            else:
+                places.append(f'."{place}"')
+
+        return f"${''.join(places)}"
+
 
 class TestSQLError(unittest.TestCase):
 
