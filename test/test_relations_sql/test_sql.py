@@ -58,6 +58,12 @@ class TestSQL(unittest.TestCase):
         sql.sql = True
         self.assertEqual(len(sql), 1)
 
+    def test_split(self):
+
+        self.assertEqual(relations_sql.SQL.split("people.stuff.things"), ("people.stuff.things", []))
+
+        self.assertEqual(relations_sql.SQL.split("people_stuff__a__0___1____2_____3"), ("people_stuff", ["a", 0, -1, "2", "-3"]))
+
     def test_generate(self):
 
         sql = relations_sql.SQL()

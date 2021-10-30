@@ -5,7 +5,6 @@ Module for all Relations SQL Expressions. pieces of criterions, criteria, and st
 import json
 import collections.abc
 
-import relations
 import relations_sql
 
 
@@ -255,21 +254,9 @@ class COLUMN_NAME(TABLE_NAME):
 
         self.jsonify = jsonify
 
-    @staticmethod
-    def split(column):
-        """
-        Splits column value into name and path
-        """
-
-        path = relations.Field.split(column)
-
-        name = path.pop(0)
-
-        return name, path
-
     def column(self, **kwargs):
         """
-        Generates the column with tbale and schema
+        Generates the column with table and schema
         """
 
         sql = []

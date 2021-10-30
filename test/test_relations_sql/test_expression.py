@@ -480,12 +480,6 @@ class TestCOLUMN_NAME(unittest.TestCase):
         self.assertEqual(expression.path, [])
         self.assertFalse(expression.jsonify)
 
-    def test_split(self):
-
-        self.assertEqual(COLUMN_NAME.split("people.stuff.things"), ("people.stuff.things", []))
-
-        self.assertEqual(COLUMN_NAME.split("people_stuff__a__0___1____2_____3"), ("people_stuff", ["a", 0, -1, "2", "-3"]))
-
     def test_column(self):
 
         expression = COLUMN_NAME("people.stuff.things")
