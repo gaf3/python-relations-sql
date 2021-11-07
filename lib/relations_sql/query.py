@@ -153,7 +153,7 @@ class SELECT(QUERY):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(*kwargs)
+        super().__init__(**kwargs)
         self.FIELDS(*args)
 
     def __call__(self, *args, **kwargs):

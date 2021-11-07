@@ -59,10 +59,10 @@ class TABLE(relations_sql.DDL):
             columns.append(self.COLUMN(migration=migration))
             if "extract" in migration:
                 for extract in sorted(migration["extract"]):
-                    store = migration.get("store", migration["name"])
+                    store = migration["store"]
                     columns.append(self.COLUMN(store=f"{store}__{extract}", kind=migration["extract"][extract]))
 
-        table = {} if self.INDEXES else {"table": self.migration["name"], "schema": self.migration.get("schema")}
+        table = {} if self.INDEXES else {"table": self.migration["store"], "schema": self.migration.get("schema")}
 
         if self.migration.get('id') is not None and self.PRIMARY:
             columns.append(relations_sql.SQL(self.PRIMARY % self.quote(self.migration['id'])))
