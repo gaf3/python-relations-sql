@@ -153,12 +153,12 @@ class SELECT(QUERY):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(**kwargs)
-        self.FIELDS(*args)
+        super().__init__(**{key: value for key, value in kwargs.items() if key in self.CLAUSES})
+        self.FIELDS(*args, **{key: value for key, value in kwargs.items() if key not in self.CLAUSES})
 
     def __call__(self, *args, **kwargs):
         """
-        Shorthand for COLUMNS
+        Shorthand for FIELDS
         """
         return self.FIELDS(*args, **kwargs)
 
@@ -179,17 +179,24 @@ class INSERT(QUERY):
         ("SELECT", SELECT)
     ])
 
-    def __init__(self, table, *args, **kwargs): # pylint: disable=too-many-branches
+    def __init__(self, TABLE, *args, **kwargs): # pylint: disable=too-many-branches
+
+        if args:
+            kwargs["COLUMNS"] = [arg for arg in args if not isinstance(arg, dict)]
+            args = [arg for arg in args if isinstance(arg, dict)]
+
+        if args:
+            kwargs["VALUES"] = args
 
         self.check(kwargs)
 
         for clause in self.CLAUSES:
             if clause == "TABLE":
-                if isinstance(table, self.CLAUSES["TABLE"]):
-                    self.clauses[clause] = table
-                    table.prefix = self.PREFIX
+                if isinstance(TABLE, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = TABLE
+                    self.clauses[clause].prefix = self.PREFIX
                 else:
-                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+                    self.clauses[clause] = self.CLAUSES[clause](TABLE, prefix=self.PREFIX)
             elif clause == "COLUMNS":
                 if "COLUMNS" in kwargs:
                     if isinstance(kwargs["COLUMNS"], self.CLAUSES["COLUMNS"]):
@@ -197,7 +204,18 @@ class INSERT(QUERY):
                     else:
                         self.clauses[clause] = self.CLAUSES[clause](kwargs["COLUMNS"])
                 else:
-                    self.clauses[clause] = self.CLAUSES[clause](args)
+                    self.clauses[clause] = self.CLAUSES[clause]([])
+            elif clause == "VALUES":
+                if "VALUES" in kwargs:
+                    if isinstance(kwargs["VALUES"], self.CLAUSES["VALUES"]):
+                        self.clauses[clause] = kwargs["VALUES"].bind(self)
+                        self.column(self.clauses[clause].columns)
+                    else:
+                        self.clauses[clause] = self.CLAUSES[clause]().bind(self)
+                        for values in kwargs["VALUES"]:
+                            self.clauses[clause](values)
+                else:
+                    self.clauses[clause] = self.CLAUSES[clause]().bind(self)
             else:
                 if clause in kwargs:
                     if isinstance(kwargs[clause], self.CLAUSES[clause]):
@@ -233,16 +251,18 @@ class LIMITED(QUERY):
     Clause that has a limit
     """
 
-    def __init__(self, table, **kwargs):
+    def __init__(self, TABLE, **kwargs):
 
         self.check(kwargs)
 
         for clause in self.CLAUSES:
             if clause == "TABLE":
-                if isinstance(table, self.CLAUSES["TABLE"]):
-                    self.clauses[clause] = table
+                if isinstance(TABLE, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = TABLE
+                    if self.PREFIX:
+                        TABLE.prefix = self.PREFIX
                 else:
-                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+                    self.clauses[clause] = self.CLAUSES[clause](TABLE, prefix=self.PREFIX)
             else:
                 if clause in kwargs:
                     if isinstance(kwargs[clause], self.CLAUSES[clause]):
@@ -296,23 +316,3 @@ class DELETE(LIMITED):
         ("ORDER_BY", relations_sql.ORDER_BY),
         ("LIMIT", relations_sql.LIMIT)
     ])
-
-    def __init__(self, table, **kwargs): # pylint: disable=too-many-branches
-
-        self.check(kwargs)
-
-        for clause in self.CLAUSES:
-            if clause == "TABLE":
-                if isinstance(table, self.CLAUSES["TABLE"]):
-                    self.clauses[clause] = table
-                    table.prefix = self.PREFIX
-                else:
-                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
-            else:
-                if clause in kwargs:
-                    if isinstance(kwargs[clause], self.CLAUSES[clause]):
-                        self.clauses[clause] = kwargs[clause].bind(self)
-                    else:
-                        self.clauses[clause] = self.CLAUSES[clause](kwargs[clause]).bind(self)
-                else:
-                    self.clauses[clause] = self.CLAUSES[clause]().bind(self)

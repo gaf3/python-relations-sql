@@ -36,6 +36,10 @@ class CLAUSE(relations_sql.CRITERIA):
         Add expressiona
         """
 
+        if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
+            kwargs = args[0]
+            args = []
+
         super().add(*args)
 
         for key in sorted(kwargs.keys()):
@@ -179,16 +183,23 @@ class LIMIT(CLAUSE):
         Add total and offset
         """
 
-        if len(args) > 2 - len(self.expressions):
-            raise relations_sql.SQLError(self, "cannot add when LIMIT set")
+        if len(args) == 1 and isinstance(args[0], dict) and total is None and offset is None:
 
-        args = list(args)
+            total = args[0].get("total")
+            offset = args[0].get("offset")
 
-        if args and len(self.expressions) == 0 and total is None:
-            total = args.pop(0)
+        else:
 
-        if args and offset is None:
-            offset = args.pop(0)
+            if len(args) > 2 - len(self.expressions):
+                raise relations_sql.SQLError(self, "cannot add when LIMIT set")
+
+            args = list(args)
+
+            if args and len(self.expressions) == 0 and total is None:
+                total = args.pop(0)
+
+            if args and offset is None:
+                offset = args.pop(0)
 
         if total is not None and not isinstance(total, int):
             raise relations_sql.SQLError(self, "LIMIT total must be int")
@@ -264,6 +275,10 @@ class VALUES(CLAUSE):
 
         if args and kwargs:
             raise relations_sql.SQLError(self, "add list or dict but not both")
+
+        if len(args) == 1 and isinstance(args[0], dict):
+            kwargs = args[0]
+            args = []
 
         if kwargs:
 

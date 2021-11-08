@@ -193,6 +193,38 @@ class TestSELECT(unittest.TestCase):
         self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
         self.assertEqual(query.WHERE.expressions[0].right.value, "things")
 
+        query = SELECT(FIELDS="*", FROM="people", WHERE={"stuff__gt": "things"})
+
+        self.assertEqual(query.FIELDS.expressions[0].name, "*")
+        self.assertEqual(query.FROM.expressions[0].name, "people")
+        self.assertIsInstance(query.WHERE.expressions[0], test_criterion.GT)
+        self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
+        self.assertEqual(query.WHERE.expressions[0].right.value, "things")
+
+        query = SELECT(stuff="things", FROM="people", WHERE={"stuff__gt": "things"})
+
+        self.assertIsInstance(query.FIELDS.expressions[0], test_expression.AS)
+        self.assertIsInstance(query.FIELDS.expressions[0].label, test_expression.NAME)
+        self.assertIsInstance(query.FIELDS.expressions[0].expression, test_expression.COLUMN_NAME)
+        self.assertEqual(query.FIELDS.expressions[0].label.name, "stuff")
+        self.assertEqual(query.FIELDS.expressions[0].expression.name, "things")
+        self.assertEqual(query.FROM.expressions[0].name, "people")
+        self.assertIsInstance(query.WHERE.expressions[0], test_criterion.GT)
+        self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
+        self.assertEqual(query.WHERE.expressions[0].right.value, "things")
+
+        query = SELECT({"stuff": "things"}, FROM="people", WHERE={"stuff__gt": "things"})
+
+        self.assertIsInstance(query.FIELDS.expressions[0], test_expression.AS)
+        self.assertIsInstance(query.FIELDS.expressions[0].label, test_expression.NAME)
+        self.assertIsInstance(query.FIELDS.expressions[0].expression, test_expression.COLUMN_NAME)
+        self.assertEqual(query.FIELDS.expressions[0].label.name, "stuff")
+        self.assertEqual(query.FIELDS.expressions[0].expression.name, "things")
+        self.assertEqual(query.FROM.expressions[0].name, "people")
+        self.assertIsInstance(query.WHERE.expressions[0], test_criterion.GT)
+        self.assertEqual(query.WHERE.expressions[0].left.name, "stuff")
+        self.assertEqual(query.WHERE.expressions[0].right.value, "things")
+
     def test_generate(self):
 
         query = SELECT("*").OPTIONS("FAST").FROM("people").WHERE(stuff__gt="things")
@@ -362,6 +394,21 @@ class TestINSERT(unittest.TestCase):
         self.assertEqual(query.COLUMNS.expressions[0].name, "things")
         self.assertEqual(query.SELECT.FIELDS.expressions[0].name, "*")
 
+        query = INSERT("people.stuff", {"things": "*"}, {"things": "&"})
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
+        self.assertEqual(query.VALUES.expressions[0].expressions[0].value, "*")
+        self.assertEqual(query.VALUES.expressions[1].expressions[0].value, "&")
+
+        query = INSERT("people.stuff", VALUES=test_clause.VALUES(things="*"))
+
+        self.assertEqual(query.TABLE.name, "stuff")
+        self.assertEqual(query.TABLE.schema.name, "people")
+        self.assertEqual(query.COLUMNS.expressions[0].name, "things")
+        self.assertEqual(query.VALUES.expressions[0].expressions[0].value, "*")
+
         query = INSERT("people.stuff", COLUMNS=["things"], SELECT=SELECT("stuff").FROM("things"))
 
         self.assertEqual(query.TABLE.name, "stuff")
@@ -515,6 +562,10 @@ class LIMITED(relations_sql.LIMITED):
         ("LIMIT", test_clause.LIMIT)
     ])
 
+class DELIMITED(LIMITED):
+
+    PREFIX = "DE"
+
 class TestLIMITED(unittest.TestCase):
 
     maxDiff = None
@@ -537,12 +588,11 @@ class TestLIMITED(unittest.TestCase):
         self.assertEqual(query.TABLE.name, "people")
 
         table = test_expression.TABLE_NAME("people")
-        query = LIMITED(table)
+        query = DELIMITED(table)
 
         self.assertEqual(query.SELECT.expressions, [])
         self.assertEqual(query.TABLE.name, "people")
-
-        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for INSERT", INSERT, "table", nope=False)
+        self.assertEqual(query.TABLE.prefix, "DE")
 
     def test_generate(self):
 
@@ -646,24 +696,6 @@ class DELETE(relations_sql.DELETE):
 class TestDELETE(unittest.TestCase):
 
     maxDiff = None
-
-    def test___init__(self):
-
-        query = DELETE("people.stuff", LIMIT=5)
-
-        self.assertEqual(query.TABLE.name, "stuff")
-        self.assertEqual(query.TABLE.schema.name, "people")
-        self.assertEqual(query.LIMIT.expressions[0].value, 5)
-
-        table = test_expression.TABLE_NAME("people.stuff")
-        limit = test_clause.LIMIT(5)
-        query = DELETE(table, LIMIT=limit)
-
-        self.assertEqual(query.TABLE.name, "stuff")
-        self.assertEqual(query.TABLE.schema.name, "people")
-        self.assertEqual(query.LIMIT.expressions[0].value, 5)
-
-        self.assertRaisesRegex(TypeError, "'nope' is an invalid keyword argument for DELETE", DELETE, "table", nope=False)
 
     def test___call__(self):
 
