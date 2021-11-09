@@ -15,7 +15,7 @@ class SQL(test_sql.SQL):
 
 class CRITERION(SQL, relations_sql.CRITERION):
 
-    OPERAND = "%s CRIERION %s"
+    OPERAND = "%s CRITERION %s"
     INVERT = "%s CRIERIOFF %s"
 
 class CRITERIONLY(SQL, relations_sql.CRITERION):
@@ -134,7 +134,7 @@ class TestCRITERION(unittest.TestCase):
         criterion = CRITERION("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, """`totes` CRIERION %s""")
+        self.assertEqual(criterion.sql, """`totes` CRITERION %s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = CRITERION("totes", "maigoats", invert=True)
@@ -143,46 +143,46 @@ class TestCRITERION(unittest.TestCase):
         self.assertEqual(criterion.sql, """`totes` CRIERIOFF %s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
-        criterion = CRITERIONREVERSE("totes", "maigoats")
+        criterion = CRITERIONREVERSE(relations_sql.SQL("totes", ["mai"]), "goats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, """%s CRIERION `totes`""")
-        self.assertEqual(criterion.args, ["maigoats"])
+        self.assertEqual(criterion.sql, """%s CRITERION totes""")
+        self.assertEqual(criterion.args, ["goats", "mai"])
 
         criterion = CRITERION(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, """`totes`#>>%s CRIERION %s""")
+        self.assertEqual(criterion.sql, """`totes`#>>%s CRITERION %s""")
         self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
         criterion = CRITERIONCAST(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, """CAST(`totes`#>>%s) CRIERION CAST(%s)""")
+        self.assertEqual(criterion.sql, """CAST(`totes`#>>%s) CRITERION CAST(%s)""")
         self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
         criterion = CRITERION(totes=test_expression.LIST([1, 2, 3]))
 
         criterion.generate()
-        self.assertEqual(criterion.sql, """`totes` CRIERION (%s,%s,%s)""")
+        self.assertEqual(criterion.sql, """`totes` CRITERION (%s,%s,%s)""")
         self.assertEqual(criterion.args, [1, 2, 3])
 
         criterion.generate(indent=2)
-        self.assertEqual(criterion.sql, """`totes` CRIERION (
+        self.assertEqual(criterion.sql, """`totes` CRITERION (
   %s,
   %s,
   %s
 )""")
 
         criterion.generate(indent=2, count=1)
-        self.assertEqual(criterion.sql, """`totes` CRIERION (
+        self.assertEqual(criterion.sql, """`totes` CRITERION (
     %s,
     %s,
     %s
   )""")
 
         criterion.generate(indent=2, count=2)
-        self.assertEqual(criterion.sql, """`totes` CRIERION (
+        self.assertEqual(criterion.sql, """`totes` CRITERION (
       %s,
       %s,
       %s

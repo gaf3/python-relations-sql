@@ -62,20 +62,21 @@ class CRITERION(relations_sql.EXPRESSION):
         line = "\n" if indent else ''
         left, right = ('', '') if isinstance(self.right, self.RIGHT) and not self.PARENTHESES else (f"({line}{next}", f"{line}{current})")
 
-        self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
-        self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+        if self.REVERSE:
+            self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+            self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
+            sql[0] = f"{left}{sql[0]}{right}"
+        else:
+            self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
+            self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+            sql[1] = f"{left}{sql[1]}{right}"
 
         operand = self.INVERT if self.invert else self.OPERAND
 
         if self.CAST:
             sql = [self.CAST % expression for expression in sql]
 
-        arguments = [sql[0], f"{left}{sql[1]}{right}"]
-
-        if self.REVERSE:
-            arguments.reverse()
-
-        self.sql = operand % tuple(arguments)
+        self.sql = operand % tuple(sql)
 
 
 class NULL(CRITERION):
