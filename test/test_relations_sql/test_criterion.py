@@ -192,6 +192,10 @@ class TestCRITERION(unittest.TestCase):
 class NULL(SQL, relations_sql.NULL):
     pass
 
+class JSONNULL(NULL):
+
+    JSONNULL = "JSONNULL(%s)"
+
 class TestNULL(unittest.TestCase):
 
     def test___len__(self):
@@ -212,6 +216,18 @@ class TestNULL(unittest.TestCase):
 
         criterion.generate()
         self.assertEqual(criterion.sql, """`totes`#>>%s IS NOT NULL""")
+        self.assertEqual(criterion.args, ['$."a"'])
+
+        criterion = JSONNULL("totes", True)
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """`totes` IS NULL""")
+        self.assertEqual(criterion.args, [])
+
+        criterion = JSONNULL(totes__a=False)
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """JSONNULL(`totes`#>>%s) IS NOT NULL""")
         self.assertEqual(criterion.args, ['$."a"'])
 
 

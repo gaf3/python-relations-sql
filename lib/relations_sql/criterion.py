@@ -86,6 +86,7 @@ class NULL(CRITERION):
 
     OPERAND = "%s IS NULL"
     INVERT = "%s IS NOT NULL"
+    JSONNULL = None
 
     def __len__(self):
 
@@ -97,6 +98,9 @@ class NULL(CRITERION):
         self.args = []
 
         self.express(self.left, sql, **kwargs)
+
+        if isinstance(self.left, relations_sql.COLUMN_NAME) and self.left.path and self.JSONNULL is not None:
+            sql[0] = self.JSONNULL % sql[0]
 
         OPERAND = self.INVERT if bool(self.right.value) == bool(self.invert) else self.OPERAND
 
