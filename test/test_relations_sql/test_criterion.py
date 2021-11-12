@@ -9,18 +9,30 @@ import relations_sql
 
 class SQL(test_sql.SQL):
 
-    LEFT = test_expression.COLUMNNAME
+    LEFT = test_expression.COLUMN_NAME
     RIGHT = test_expression.VALUE
 
 
 class CRITERION(SQL, relations_sql.CRITERION):
 
-    OPERAND = "%s CRIERION %s"
+    OPERAND = "%s CRITERION %s"
     INVERT = "%s CRIERIOFF %s"
 
 class CRITERIONLY(SQL, relations_sql.CRITERION):
 
     OPERAND = "%s CRITERIONLY %s"
+
+class CRITERIONJSONPATH(CRITERION):
+
+    JSONPATH = True
+
+class CRITERIONREVERSE(CRITERION):
+
+    REVERSE = True
+
+class CRITERIONCAST(CRITERION):
+
+    CAST = "CAST(%s)"
 
 class TestCRITERION(unittest.TestCase):
 
@@ -30,7 +42,7 @@ class TestCRITERION(unittest.TestCase):
 
         criterion = CRITERION("totes", "maigoats", jsonify=True)
 
-        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
         self.assertFalse(criterion.invert)
         self.assertEqual(criterion.left.name, "totes")
         self.assertTrue(criterion.left.jsonify)
@@ -38,9 +50,9 @@ class TestCRITERION(unittest.TestCase):
         self.assertEqual(criterion.right.value, "maigoats")
         self.assertTrue(criterion.right.jsonify)
 
-        criterion = CRITERION(test_expression.COLUMNNAME("toats"), test_expression.VALUE("maigotes"))
+        criterion = CRITERION(test_expression.COLUMN_NAME("toats"), test_expression.VALUE("maigotes"))
 
-        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
         self.assertFalse(criterion.invert)
         self.assertEqual(criterion.left.name, "toats")
         self.assertFalse(criterion.left.jsonify)
@@ -50,18 +62,18 @@ class TestCRITERION(unittest.TestCase):
 
         criterion = CRITERION(totes__a="maigoats", invert=True)
 
-        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
         self.assertTrue(criterion.invert)
         self.assertEqual(criterion.left.name, "totes")
         self.assertEqual(criterion.left.path, ["a"])
         self.assertFalse(criterion.left.jsonify)
         self.assertIsInstance(criterion.right, test_expression.VALUE)
         self.assertEqual(criterion.right.value, "maigoats")
-        self.assertTrue(criterion.right.jsonify)
+        self.assertFalse(criterion.right.jsonify)
 
         criterion = CRITERION(totes__a="maigoats", extracted=True)
 
-        self.assertIsInstance(criterion.left, test_expression.COLUMNNAME)
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
         self.assertEqual(criterion.left.name, "totes__a")
         self.assertEqual(criterion.left.path, [])
         self.assertFalse(criterion.left.jsonify)
@@ -70,6 +82,46 @@ class TestCRITERION(unittest.TestCase):
         self.assertFalse(criterion.right.jsonify)
 
         self.assertRaisesRegex(relations_sql.SQLError, "no invert without INVERT operand", CRITERIONLY, invert=True)
+
+        criterion = CRITERIONJSONPATH(totes__a="maigoats", extracted=True)
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes__a")
+        self.assertEqual(criterion.left.path, [])
+        self.assertFalse(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertFalse(criterion.right.jsonify)
+
+        criterion = CRITERIONJSONPATH(totes__a="maigoats")
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes")
+        self.assertEqual(criterion.left.path, ["a"])
+        self.assertTrue(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertTrue(criterion.right.jsonify)
+
+        criterion = CRITERIONCAST(totes__a="maigoats", extracted=True)
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes__a")
+        self.assertEqual(criterion.left.path, [])
+        self.assertFalse(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertFalse(criterion.right.jsonify)
+
+        criterion = CRITERIONCAST(totes__a="maigoats")
+
+        self.assertIsInstance(criterion.left, test_expression.COLUMN_NAME)
+        self.assertEqual(criterion.left.name, "totes")
+        self.assertEqual(criterion.left.path, ["a"])
+        self.assertFalse(criterion.left.jsonify)
+        self.assertIsInstance(criterion.right, test_expression.VALUE)
+        self.assertEqual(criterion.right.value, "maigoats")
+        self.assertFalse(criterion.right.jsonify)
 
     def test___len__(self):
 
@@ -82,43 +134,55 @@ class TestCRITERION(unittest.TestCase):
         criterion = CRITERION("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` CRIERION %s")
+        self.assertEqual(criterion.sql, """`totes` CRITERION %s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = CRITERION("totes", "maigoats", invert=True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` CRIERIOFF %s")
+        self.assertEqual(criterion.sql, """`totes` CRIERIOFF %s""")
         self.assertEqual(criterion.args, ["maigoats"])
+
+        criterion = CRITERIONREVERSE(relations_sql.SQL("totes", ["mai"]), "goats")
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """%s CRITERION totes""")
+        self.assertEqual(criterion.args, ["goats", "mai"])
 
         criterion = CRITERION(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s CRIERION JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s CRITERION %s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
+
+        criterion = CRITERIONCAST(totes__a="maigoats")
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """CAST(`totes`#>>%s) CRITERION CAST(%s)""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
         criterion = CRITERION(totes=test_expression.LIST([1, 2, 3]))
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` CRIERION (%s,%s,%s)")
+        self.assertEqual(criterion.sql, """`totes` CRITERION (%s,%s,%s)""")
         self.assertEqual(criterion.args, [1, 2, 3])
 
         criterion.generate(indent=2)
-        self.assertEqual(criterion.sql, """`totes` CRIERION (
+        self.assertEqual(criterion.sql, """`totes` CRITERION (
   %s,
   %s,
   %s
 )""")
 
         criterion.generate(indent=2, count=1)
-        self.assertEqual(criterion.sql, """`totes` CRIERION (
+        self.assertEqual(criterion.sql, """`totes` CRITERION (
     %s,
     %s,
     %s
   )""")
 
         criterion.generate(indent=2, count=2)
-        self.assertEqual(criterion.sql, """`totes` CRIERION (
+        self.assertEqual(criterion.sql, """`totes` CRITERION (
       %s,
       %s,
       %s
@@ -127,6 +191,10 @@ class TestCRITERION(unittest.TestCase):
 
 class NULL(SQL, relations_sql.NULL):
     pass
+
+class JSONNULL(NULL):
+
+    JSONNULL = "JSONNULL(%s)"
 
 class TestNULL(unittest.TestCase):
 
@@ -141,13 +209,25 @@ class TestNULL(unittest.TestCase):
         criterion = NULL("totes", True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` IS NULL")
+        self.assertEqual(criterion.sql, """`totes` IS NULL""")
         self.assertEqual(criterion.args, [])
 
         criterion = NULL(totes__a=False)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s IS NOT NULL")
+        self.assertEqual(criterion.sql, """`totes`#>>%s IS NOT NULL""")
+        self.assertEqual(criterion.args, ['$."a"'])
+
+        criterion = JSONNULL("totes", True)
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """`totes` IS NULL""")
+        self.assertEqual(criterion.args, [])
+
+        criterion = JSONNULL(totes__a=False)
+
+        criterion.generate()
+        self.assertEqual(criterion.sql, """JSONNULL(`totes`#>>%s) IS NOT NULL""")
         self.assertEqual(criterion.args, ['$."a"'])
 
 
@@ -161,20 +241,20 @@ class TestEQ(unittest.TestCase):
         criterion = EQ("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`=%s")
+        self.assertEqual(criterion.sql, """`totes`=%s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = EQ("totes", "maigoats", invert=True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`!=%s")
+        self.assertEqual(criterion.sql, """`totes`!=%s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = EQ(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s=JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s=%s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
 
 class GT(SQL, relations_sql.GT):
@@ -187,14 +267,14 @@ class TestGT(unittest.TestCase):
         criterion = GT("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`>%s")
+        self.assertEqual(criterion.sql, """`totes`>%s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = GT(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s>JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s>%s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
 
 class GTE(SQL, relations_sql.GTE):
@@ -207,14 +287,14 @@ class TestGTE(unittest.TestCase):
         criterion = GTE("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`>=%s")
+        self.assertEqual(criterion.sql, """`totes`>=%s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = GTE(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s>=JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s>=%s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
 
 class LT(SQL, relations_sql.LT):
@@ -227,14 +307,14 @@ class TestLT(unittest.TestCase):
         criterion = LT("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`<%s")
+        self.assertEqual(criterion.sql, """`totes`<%s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = LT(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s<JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s<%s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
 
 class LTE(SQL, relations_sql.LTE):
@@ -247,14 +327,14 @@ class TestLTE(unittest.TestCase):
         criterion = LTE("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`<=%s")
+        self.assertEqual(criterion.sql, """`totes`<=%s""")
         self.assertEqual(criterion.args, ["maigoats"])
 
         criterion = LTE(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s<=JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s<=%s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats'])
 
 
 class LIKE(SQL, relations_sql.LIKE):
@@ -267,20 +347,20 @@ class TestLIKE(unittest.TestCase):
         criterion = LIKE("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` LIKE %s")
+        self.assertEqual(criterion.sql, """`totes` LIKE %s""")
         self.assertEqual(criterion.args, ["%maigoats%"])
 
         criterion = LIKE("totes", "maigoats", invert=True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` NOT LIKE %s")
+        self.assertEqual(criterion.sql, """`totes` NOT LIKE %s""")
         self.assertEqual(criterion.args, ["%maigoats%"])
 
         criterion = LIKE(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s LIKE JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"%maigoats%"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s LIKE %s""")
+        self.assertEqual(criterion.args, ['$."a"', '%maigoats%'])
 
 
 class START(SQL, relations_sql.START):
@@ -293,20 +373,20 @@ class TestSTART(unittest.TestCase):
         criterion = START("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` LIKE %s")
+        self.assertEqual(criterion.sql, """`totes` LIKE %s""")
         self.assertEqual(criterion.args, ["maigoats%"])
 
         criterion = START("totes", "maigoats", invert=True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` NOT LIKE %s")
+        self.assertEqual(criterion.sql, """`totes` NOT LIKE %s""")
         self.assertEqual(criterion.args, ["maigoats%"])
 
         criterion = START(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s LIKE JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"maigoats%"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s LIKE %s""")
+        self.assertEqual(criterion.args, ['$."a"', 'maigoats%'])
 
 
 class END(SQL, relations_sql.END):
@@ -319,20 +399,20 @@ class TestEND(unittest.TestCase):
         criterion = END("totes", "maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` LIKE %s")
+        self.assertEqual(criterion.sql, """`totes` LIKE %s""")
         self.assertEqual(criterion.args, ["%maigoats"])
 
         criterion = END("totes", "maigoats", invert=True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` NOT LIKE %s")
+        self.assertEqual(criterion.sql, """`totes` NOT LIKE %s""")
         self.assertEqual(criterion.args, ["%maigoats"])
 
         criterion = END(totes__a="maigoats")
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s LIKE JSON(%s)")
-        self.assertEqual(criterion.args, ['$."a"', '"%maigoats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s LIKE %s""")
+        self.assertEqual(criterion.args, ['$."a"', '%maigoats'])
 
 
 class IN(SQL, relations_sql.IN):
@@ -347,25 +427,25 @@ class TestIN(unittest.TestCase):
         criterion = IN("totes", ["mai", "goats"])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` IN (%s,%s)")
+        self.assertEqual(criterion.sql, """`totes` IN (%s,%s)""")
         self.assertEqual(criterion.args, ["mai", "goats"])
 
         criterion = IN("totes", ["mai", "goats"], invert=True)
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes` NOT IN (%s,%s)")
+        self.assertEqual(criterion.sql, """`totes` NOT IN (%s,%s)""")
         self.assertEqual(criterion.args, ["mai", "goats"])
 
         criterion = IN(totes__a=["mai", "goats"])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "`totes`#>>%s IN (JSON(%s),JSON(%s))")
-        self.assertEqual(criterion.args, ['$."a"', '"mai"', '"goats"'])
+        self.assertEqual(criterion.sql, """`totes`#>>%s IN (%s,%s)""")
+        self.assertEqual(criterion.args, ['$."a"', 'mai', 'goats'])
 
         criterion = IN(totes__a=[])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "%s")
+        self.assertEqual(criterion.sql, """%s""")
         self.assertEqual(criterion.args, [False])
 
 
@@ -380,7 +460,7 @@ class TestCONTAINS(unittest.TestCase):
         criterion = CONTAINS("totes", ["mai", "goats"])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "CONTAINS(`totes`,JSON(%s))")
+        self.assertEqual(criterion.sql, """CONTAINS(`totes`,JSON(%s))""")
         self.assertEqual(criterion.args, ['["mai", "goats"]'])
 
 
@@ -395,5 +475,5 @@ class TestLENGTHS(unittest.TestCase):
         criterion = LENGTHS("totes", ["mai", "goats"])
 
         criterion.generate()
-        self.assertEqual(criterion.sql, "LENGTHS(`totes`,JSON(%s))")
+        self.assertEqual(criterion.sql, """LENGTHS(`totes`,JSON(%s))""")
         self.assertEqual(criterion.args, ['["mai", "goats"]'])

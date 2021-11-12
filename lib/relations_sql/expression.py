@@ -5,7 +5,6 @@ Module for all Relations SQL Expressions. pieces of criterions, criteria, and st
 import json
 import collections.abc
 
-import relations
 import relations_sql
 
 
@@ -14,7 +13,9 @@ class EXPRESSION(relations_sql.SQL):
     Base class for expressions
     """
 
-    QUOTE = None
+    def __len__(self):
+
+        return 1
 
     def quote(self, value):
         """
@@ -45,26 +46,19 @@ class VALUE(EXPRESSION):
     Class for storing a value that will need to be escaped
     """
 
-    PLACEHOLDER = None
-    JSONIFY = None
-
     value = None # the value
     jsonify = None # whether this value will be used with JSON
 
     def __init__(self, value, jsonify=False):
 
         self.value = value
-        self.jsonify = jsonify or not isinstance(value, (bool, int, float, str))
-
-    def __len__(self):
-
-        return 1
+        self.jsonify = jsonify or (value is not None and not isinstance(value, (bool, int, float, str)))
 
     def generate(self, **kwargs):
 
         if self.jsonify:
             self.sql = self.JSONIFY % self.PLACEHOLDER
-            self.args = [json.dumps(self.value)]
+            self.args = [json.dumps(sorted(list(self.value)) if isinstance(self.value, set) else self.value)]
         else:
             self.sql = self.PLACEHOLDER
             self.args = [self.value]
@@ -160,20 +154,18 @@ class NAME(EXPRESSION):
         self.args = []
 
 
-class SCHEMANAME(NAME):
+class SCHEMA_NAME(NAME):
     """
     For schemas
     """
 
 
-class TABLENAME(SCHEMANAME):
+class TABLE_NAME(SCHEMA_NAME):
     """
     For tables
     """
 
-    SCHEMANAME = SCHEMANAME
-
-    SEPARATOR = None
+    SCHEMA_NAME = SCHEMA_NAME
 
     schema = None
 
@@ -194,9 +186,9 @@ class TABLENAME(SCHEMANAME):
         self.name = pieces.pop(-1)
 
         if schema is not None:
-            self.schema = schema if isinstance(schema, relations_sql.SQL) else self.SCHEMANAME(schema)
+            self.schema = schema if isinstance(schema, relations_sql.SQL) else self.SCHEMA_NAME(schema)
         elif len(pieces) == 1:
-            self.schema = self.SCHEMANAME(pieces[0])
+            self.schema = self.SCHEMA_NAME(pieces[0])
 
         self.prefix = prefix
 
@@ -221,20 +213,16 @@ class TABLENAME(SCHEMANAME):
             self.sql = f"{self.prefix}{line}{next}{self.sql}" if self.prefix else f"{one}{self.sql}"
 
 
-class COLUMNNAME(TABLENAME):
+class COLUMN_NAME(TABLE_NAME):
     """
-    Class for storing a column that'll be used as a field
+    Class for storing a column that'll be used as a column
     """
 
-    PLACEHOLDER = None
-    JSONIFY = None
-    PATH = None
-
-    TABLENAME = TABLENAME
+    TABLE_NAME = TABLE_NAME
 
     table = None  # name of the table
 
-    jsonify = None # whether we need to cast this field as JSON
+    jsonify = None # whether we need to cast this column as JSON
     path = None     # path to use in the JSON
 
     def __init__(self, name, table=None, schema=None, jsonify=False, extracted=False):
@@ -262,25 +250,13 @@ class COLUMNNAME(TABLENAME):
                 schema = piece
 
         if table is not None:
-            self.table = table if isinstance(table, relations_sql.SQL) else self.TABLENAME(table, schema)
+            self.table = table if isinstance(table, relations_sql.SQL) else self.TABLE_NAME(table, schema)
 
         self.jsonify = jsonify
 
-    @staticmethod
-    def split(field):
+    def column(self, **kwargs):
         """
-        Splits field value into name and path
-        """
-
-        path = relations.Field.split(field)
-
-        name = path.pop(0)
-
-        return name, path
-
-    def field(self, **kwargs):
-        """
-        Generates the field with tbale and schema
+        Generates the column with table and schema
         """
 
         sql = []
@@ -299,18 +275,21 @@ class COLUMNNAME(TABLENAME):
 
         self.args = []
 
-        field = self.JSONIFY % self.field() if self.jsonify else self.field(**kwargs)
+        column = self.column(**kwargs)
 
         if self.path:
-            self.sql = self.PATH % (field, self.PLACEHOLDER)
+            self.sql = self.PATH % (column, self.PLACEHOLDER)
             self.args.append(self.walk(self.path))
         else:
-            self.sql = field
+            self.sql = column
+
+        if self.jsonify:
+            self.sql = self.JSONIFY % self.sql
 
 
 class NAMES(LIST):
     """
-    Holds a list of field names only, with table
+    Holds a list of column names only, with table
     """
 
     ARG = NAME
@@ -326,12 +305,22 @@ class NAMES(LIST):
                 self.expressions.append(self.ARG(expression))
 
 
-class COLUMNNAMES(NAMES):
+class COLUMN_NAMES(NAMES):
     """
-    Holds a list of field names only, with table
+    Holds a list of column names only, with table
     """
 
-    ARG = NAME
+    ARG = COLUMN_NAME
+
+    def __init__(self, expressions):
+
+        self.expressions = []
+
+        for expression in expressions:
+            if isinstance(expression, relations_sql.SQL):
+                self.expressions.append(expression)
+            else:
+                self.expressions.append(self.ARG(expression, extracted=True))
 
     def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
@@ -400,7 +389,7 @@ class ORDER(EXPRESSION):
     For anything that needs to be ordered
     """
 
-    EXPRESSION = COLUMNNAME
+    EXPRESSION = COLUMN_NAME
 
     expression = None
     order = None
@@ -445,20 +434,20 @@ class ASSIGN(EXPRESSION):
     For SET pairings
     """
 
-    COLUMNNAME = NAME
+    COLUMN_NAME = COLUMN_NAME
     EXPRESSION = VALUE
 
-    field = None
+    column = None
     expression = None
 
-    def __init__(self, field, expression):
+    def __init__(self, column, expression):
 
-        self.field = field if isinstance(field, relations_sql.SQL) else self.COLUMNNAME(field)
+        self.column = column if isinstance(column, relations_sql.SQL) else self.COLUMN_NAME(column)
         self.expression = expression if isinstance(expression, relations_sql.SQL) else self.EXPRESSION(expression)
 
     def __len__(self):
 
-        return len(self.field) + len(self.expression)
+        return len(self.column) + len(self.expression)
 
     def generate(self, indent=0, count=0, pad=' ', **kwargs):
         """
@@ -473,7 +462,7 @@ class ASSIGN(EXPRESSION):
         line = "\n" if indent else ''
         left, right = (f"({line}{next}", f"{line}{current})") if isinstance(self.expression, relations_sql.SELECT) else ('', '')
 
-        self.express(self.field, sql, indent=indent, count=count+1, **kwargs)
+        self.express(self.column, sql, indent=indent, count=count+1, **kwargs)
         self.express(self.expression, sql, indent=indent, count=count+1, **kwargs)
 
         self.sql = f"{sql[0]}={left}{sql[1]}{right}"

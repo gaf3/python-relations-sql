@@ -10,8 +10,8 @@ import relations_sql
 
 class INDEX(test_ddl.DDL, relations_sql.INDEX):
 
-    TABLE = test_expression.TABLENAME
-    COLUMNS = test_expression.COLUMNNAMES
+    TABLE = test_expression.TABLE_NAME
+    COLUMNS = test_expression.COLUMN_NAMES
 
     MODIFY = "MODIFY %s TO %s"
 
@@ -42,10 +42,10 @@ class TestINDEX(unittest.TestCase):
         ddl.create()
         self.assertEqual(ddl.sql, """INDEX `people` (`stuff`,`things`)""")
 
-        ddl = INDEX(schema="people", table="stuff", name="things", columns=["persons", "stuffins"])
+        ddl = INDEX(schema="people", table="stuff", name="things", columns=["persons", "stuff__ins"])
 
         ddl.create()
-        self.assertEqual(ddl.sql, """CREATE INDEX `stuff_things` ON `people`.`stuff` (`persons`,`stuffins`)""")
+        self.assertEqual(ddl.sql, """CREATE INDEX `stuff_things` ON `people`.`stuff` (`persons`,`stuff__ins`)""")
 
     def test_add(self):
 
@@ -54,10 +54,10 @@ class TestINDEX(unittest.TestCase):
         ddl.add()
         self.assertEqual(ddl.sql, """ADD INDEX `people` (`stuff`,`things`)""")
 
-        ddl = INDEX(schema="people", table="stuff", name="things", columns=["persons", "stuffins"], added=True)
+        ddl = INDEX(schema="people", table="stuff", name="things", columns=["persons", "stuff__ins"], added=True)
 
         ddl.add()
-        self.assertEqual(ddl.sql, """CREATE INDEX `stuff_things` ON `people`.`stuff` (`persons`,`stuffins`)""")
+        self.assertEqual(ddl.sql, """CREATE INDEX `stuff_things` ON `people`.`stuff` (`persons`,`stuff__ins`)""")
 
     def test_modify(self):
 
@@ -66,7 +66,7 @@ class TestINDEX(unittest.TestCase):
         ddl.modify()
         self.assertEqual(ddl.sql, """MODIFY `persons` TO `people`""")
 
-        ddl = INDEX(schema="people", table="stuff", name="things", columns=["persons", "stuffins"], definition={"name": "persons"})
+        ddl = INDEX(schema="people", table="stuff", name="things", columns=["persons", "stuff__ins"], definition={"name": "persons"})
 
         ddl.modify()
         self.assertEqual(ddl.sql, """MODIFY `persons` TO `people`.`stuff_things`""")
@@ -76,12 +76,12 @@ class TestINDEX(unittest.TestCase):
         ddl = INDEX(definition={"name": "persons"})
 
         ddl.drop()
-        self.assertEqual(ddl.sql, "DROP INDEX `persons`")
+        self.assertEqual(ddl.sql, """DROP INDEX `persons`""")
 
         ddl = INDEX(definition={"table": {"schema": "people", "name": "stuff"}, "name": "things"})
 
         ddl.drop()
-        self.assertEqual(ddl.sql, "DROP INDEX `people`.`stuff_things`")
+        self.assertEqual(ddl.sql, """DROP INDEX `people`.`stuff_things`""")
 
     def test_generate(self):
 
@@ -106,7 +106,7 @@ class TestINDEX(unittest.TestCase):
         ddl = INDEX(definition={"name": "persons"})
 
         ddl.generate()
-        self.assertEqual(ddl.sql, "DROP INDEX `persons`")
+        self.assertEqual(ddl.sql, """DROP INDEX `persons`""")
         self.assertEqual(ddl.args, [])
 
 
@@ -141,5 +141,5 @@ class TestUNIQUE(unittest.TestCase):
         ddl = UNIQUE(definition={"name": "persons"})
 
         ddl.generate()
-        self.assertEqual(ddl.sql, "DROP INDEX `persons`")
+        self.assertEqual(ddl.sql, """DROP INDEX `persons`""")
         self.assertEqual(ddl.args, [])

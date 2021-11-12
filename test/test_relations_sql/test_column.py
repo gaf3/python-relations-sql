@@ -18,10 +18,11 @@ class COLUMN(test_ddl.DDL, relations_sql.COLUMN):
         "json": "JSON"
     }
 
-    COLUMNNAME = test_expression.COLUMNNAME
+    COLUMN_NAME = test_expression.COLUMN_NAME
 
     STORE = "STORE %s AS %s"
     KIND = "KIND %s AS %s"
+    AUTO = "AUTO"
     EXTRACT = "AS %s"
     SET_DEFAULT = "SET DEFAULT %s AS %s"
     UNSET_DEFAULT = "UNSET DEFAULT %s"
@@ -40,19 +41,28 @@ class TestCOLUMN(unittest.TestCase):
         self.assertEqual(ddl.name(), """`_flag`""")
         self.assertEqual(ddl.name(definition=True), """`football`""")
 
+    def test_extract(self):
+
+        ddl = COLUMN(store="data__a__0___1____2_____3", kind="str")
+
+        sql = []
+
+        ddl.extract("str", sql)
+        self.assertEqual(sql, ["""STR""", """AS `data`#>>'$."a"[0][-1]."2"."-3"'"""])
+
     def test_create(self):
 
         field = relations.Field(bool, name="flag")
         ddl = COLUMN(field.define())
 
         ddl.create()
-        self.assertEqual(ddl.sql, "`flag` BOOL")
+        self.assertEqual(ddl.sql, """`flag` BOOL""")
 
-        field = relations.Field(int, name="id")
+        field = relations.Field(int, name="id", auto=True)
         ddl = COLUMN(field.define())
 
         ddl.create()
-        self.assertEqual(ddl.sql, "`id` INT")
+        self.assertEqual(ddl.sql, """`id` AUTO""")
 
         field = relations.Field(float, "price", store="_price", default=1.25, none=False)
         ddl = COLUMN(field.define())
@@ -75,7 +85,7 @@ class TestCOLUMN(unittest.TestCase):
         ddl = COLUMN(store="data__a__0___1____2_____3", kind="str")
 
         ddl.create()
-        self.assertEqual(ddl.sql, """`data__a__0___1____2_____3` STR AS `data`#>>$."a"[0][-1]."2"."-3\"""")
+        self.assertEqual(ddl.sql, """`data__a__0___1____2_____3` STR AS `data`#>>'$."a"[0][-1]."2"."-3"'""")
 
     def test_add(self):
 
@@ -112,7 +122,7 @@ class TestCOLUMN(unittest.TestCase):
         ddl = COLUMN(store="data__a__0___1____2_____3", kind="str", added=True)
 
         ddl.add()
-        self.assertEqual(ddl.sql, """ADD `data__a__0___1____2_____3` STR AS `data`#>>$."a"[0][-1]."2"."-3\"""")
+        self.assertEqual(ddl.sql, """ADD `data__a__0___1____2_____3` STR AS `data`#>>'$."a"[0][-1]."2"."-3"'""")
 
     def test_store(self):
 
@@ -156,6 +166,14 @@ class TestCOLUMN(unittest.TestCase):
         sql = []
         ddl.default(sql)
         self.assertEqual(sql, ["""SET DEFAULT `name` AS 'Willy'"""])
+
+        field = relations.Field(dict, store="meta", default={"a": 1})
+
+        definition = {}
+        ddl = COLUMN(field.define(), definition)
+        sql = []
+        ddl.default(sql)
+        self.assertEqual(sql, ["""SET DEFAULT `meta` AS '{"a": 1}'"""])
 
         field = relations.Field(str, store="name")
 
@@ -225,5 +243,5 @@ SET NOT NONE `id`""")
         ddl = COLUMN(definition=field.define())
 
         ddl.generate()
-        self.assertEqual(ddl.sql, "DROP `flag`")
+        self.assertEqual(ddl.sql, """DROP `flag`""")
         self.assertEqual(ddl.args, [])

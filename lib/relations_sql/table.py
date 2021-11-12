@@ -20,23 +20,30 @@ class TABLE(relations_sql.DDL):
     INDEXES = None
 
     SCHEMA = None
-    RENAME = None
+    STORE = None
+    PRIMARY = None
 
-    def name(self, definition=False):
+    def name(self, state="migration"):
         """
-        Generate a quoted name, with store as the default
+        Generate a quoted name, with table as the default
         """
 
-        state = self.definition if definition or "store" not in self.migration else self.migration
-        name = state['store']
+        if isinstance(state, str):
+            state = {
+                "name": state,
+                "schema": state
+            }
 
-        table = self.NAME(name, schema=state.get("schema"))
+        store = (self.definition if state["name"] == "definition" or "store" not in self.migration else self.migration)["store"]
+        schema = (self.definition if state["schema"] == "definition" else self.migration).get("schema")
+
+        table = self.NAME(store, schema=schema)
 
         table.generate()
 
         return table.sql
 
-    def create(self, indent=0, count=0, pad=' ', **kwarg): # pylint: disable=too-many-locals
+    def create(self, indent=0, count=0, pad=' ', **kwargs): # pylint: disable=too-many-locals
         """
         CREATE DLL
         """
@@ -52,10 +59,13 @@ class TABLE(relations_sql.DDL):
             columns.append(self.COLUMN(migration=migration))
             if "extract" in migration:
                 for extract in sorted(migration["extract"]):
-                    store = migration.get("store", migration["name"])
-                    columns.append(self.COLUMN(store=f"{store}_{extract}", kind=migration["extract"][extract]))
+                    store = migration["store"]
+                    columns.append(self.COLUMN(store=f"{store}__{extract}", kind=migration["extract"][extract]))
 
-        table = {} if self.INDEXES else {"table": self.migration["name"], "schema": self.migration.get("schema")}
+        table = {} if self.INDEXES else {"table": self.migration["store"], "schema": self.migration.get("schema")}
+
+        if self.migration.get('id') is not None and self.PRIMARY:
+            columns.append(relations_sql.SQL(self.PRIMARY % self.quote(self.migration['id'])))
 
         for index in sorted(self.migration.get("index", {})):
             indexes.append(self.INDEX(name=index, columns=self.migration["index"][index], **table))
@@ -116,7 +126,7 @@ class TABLE(relations_sql.DDL):
             if "extract" in migration:
                 for extract in sorted(migration["extract"]):
                     store = migration.get("store", migration["name"])
-                    columns.append(self.COLUMN(store=f"{store}_{extract}", kind=migration["extract"][extract], added=True))
+                    columns.append(self.COLUMN(store=f"{store}__{extract}", kind=migration["extract"][extract], added=True))
 
     def fields_change(self, columns):
         """
@@ -140,7 +150,7 @@ class TABLE(relations_sql.DDL):
                     if extract not in definition.get("extract"):
                         columns.append(self.COLUMN(
                             migration={
-                                "store": f"{migration.get('store', field)}_{extract}",
+                                "store": f"{migration.get('store', field)}__{extract}",
                                 "kind": migration["extract"][extract]
                             },
                             added=True
@@ -148,11 +158,11 @@ class TABLE(relations_sql.DDL):
                     elif migration["extract"][extract] != definition["extract"][extract]:
                         columns.append(self.COLUMN(
                             migration={
-                                "store": f"{migration.get('store', field)}_{extract}",
+                                "store": f"{migration.get('store', field)}__{extract}",
                                 "kind": migration["extract"][extract]
                             },
                             definition={
-                                "store": f"{definition['store']}_{extract}",
+                                "store": f"{definition['store']}__{extract}",
                                 "kind": definition["extract"][extract]
                             }
                         ))
@@ -161,7 +171,7 @@ class TABLE(relations_sql.DDL):
                     if extract not in migration["extract"]:
                         columns.append(self.COLUMN(
                             definition={
-                                "store": f"{definition['store']}_{extract}",
+                                "store": f"{definition['store']}__{extract}",
                                 "kind": definition["extract"][extract]
                             }
                         ))
@@ -171,11 +181,11 @@ class TABLE(relations_sql.DDL):
                 for extract in sorted(definition["extract"]):
                     columns.append(self.COLUMN(
                         migration={
-                            "store": f"{migration.get('store', field)}_{extract}",
+                            "store": f"{migration.get('store', field)}__{extract}",
                             "kind": definition["extract"][extract]
                         },
                         definition={
-                            "store": f"{definition['store']}_{extract}",
+                            "store": f"{definition['store']}__{extract}",
                             "kind": definition["extract"][extract]
                         }
                     ))
@@ -198,7 +208,7 @@ class TABLE(relations_sql.DDL):
                 for extract in sorted(definition["extract"]):
                     columns.append(self.COLUMN(
                         definition={
-                            "store": f"{definition['store']}_{extract}",
+                            "store": f"{definition['store']}__{extract}",
                             "kind": definition["extract"][extract]
                         }
                     ))
@@ -239,6 +249,26 @@ class TABLE(relations_sql.DDL):
                 }
             ))
 
+    def schema(self, sql):
+        """
+        Change the schema
+        """
+
+        if self.SCHEMA:
+            sql.append(self.SCHEMA % (self.name(state="definition"), self.quote(self.migration["schema"])))
+        else:
+            raise relations_sql.SQLError(self, "schema change not supported")
+
+    def store(self, sql):
+        """
+        Change the schema
+        """
+
+        if self.STORE:
+            sql.append(self.STORE % (self.name(state={"name": "definition", "schema": "migration"}), self.name()))
+        else:
+            raise relations_sql.SQLError(self, "store change not supported")
+
     def modify(self, indent=0, count=0, pad=' ', **kwargs):
         """
         MODIFY DLL
@@ -246,11 +276,11 @@ class TABLE(relations_sql.DDL):
 
         sql = []
 
-        if "schema" in self.migration and self.SCHEMA:
-            sql.append(self.SCHEMA % (self.name(definition=True), self.quote(self.definition.get("schema"))))
+        if "schema" in self.migration:
+            self.schema(sql)
 
-        if "name" in self.migration and self.RENAME:
-            sql.append(self.RENAME % (self.name(definition=True), self.quote(self.name())))
+        if "store" in self.migration:
+            self.store(sql)
 
         inside = []
 
@@ -295,4 +325,4 @@ class TABLE(relations_sql.DDL):
         DROP DLL
         """
 
-        self.sql = f"DROP TABLE {self.name(definition=True)};\n"
+        self.sql = f"DROP TABLE IF EXISTS {self.name(state='definition')};\n"

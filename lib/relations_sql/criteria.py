@@ -94,6 +94,10 @@ class SETS(relations_sql.CRITERION):
 
     expression = None
 
+    def __len__(self):
+
+        return 1
+
     def generate(self, **kwargs):
         """
         Concats the values
@@ -103,9 +107,16 @@ class SETS(relations_sql.CRITERION):
         self.sql = self.expression.sql
         self.args = self.expression.args
 
-    def __len__(self):
+    @staticmethod
+    def ensure(value):
+        """
+        Ensures the value is a list
+        """
 
-        return 1
+        if not isinstance(value, relations_sql.SQL) and not isinstance(value, (set, list)) and value is not None:
+            return [value]
+
+        return value
 
 
 class HAS(SETS):
@@ -115,9 +126,14 @@ class HAS(SETS):
 
     CONTAINS = relations_sql.CONTAINS
 
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
-        self.expression = self.CONTAINS(left, right, jsonify=jsonify, **kwargs)
+        if kwargs:
+            left, right = list(kwargs.items())[0]
+
+        right = self.ensure(right)
+
+        self.expression = self.CONTAINS(left, right, invert=invert, jsonify=jsonify, extracted=extracted)
 
 
 class ANY(SETS):
@@ -126,20 +142,19 @@ class ANY(SETS):
     """
 
     OR = OR
-    LEFT = relations_sql.COLUMNNAME
+    LEFT = relations_sql.COLUMN_NAME
     VALUE = relations_sql.VALUE
     CONTAINS = relations_sql.CONTAINS
 
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
         if kwargs:
             left, right = list(kwargs.items())[0]
 
         if not isinstance(left, relations_sql.SQL):
-            left = self.LEFT(left, jsonify=jsonify)
+            left = self.LEFT(left, jsonify=jsonify, extracted=extracted)
 
-        if not isinstance(right, list):
-            raise relations_sql.SQLError(self, f"right {right} must be list")
+        right = self.ensure(right)
 
         self.expression = self.OR([self.CONTAINS(left, self.VALUE([value])) for value in right])
 
@@ -153,9 +168,14 @@ class ALL(SETS):
     CONTAINS = relations_sql.CONTAINS
     LENGTHS = relations_sql.LENGTHS
 
-    def __init__(self, left=None, right=None, jsonify=False, **kwargs):
+    def __init__(self, left=None, right=None, invert=False, jsonify=False, extracted=False, **kwargs):
 
-        self.expression = self.AND(self.CONTAINS(left, right, jsonify, **kwargs), self.LENGTHS(left, right, jsonify, **kwargs))
+        right = self.ensure(right)
+
+        self.expression = self.AND(
+            self.CONTAINS(left, right, invert=invert, jsonify=jsonify, extracted=extracted, **kwargs),
+            self.LENGTHS(left, right, invert=invert, jsonify=jsonify, extracted=extracted, **kwargs)
+        )
 
 
 class OP:

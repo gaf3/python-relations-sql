@@ -17,6 +17,9 @@ class CRITERION(relations_sql.EXPRESSION):
     OPERAND = None # OPERAND to use as format string (if any)
     INVERT = None # OPERAND to use as format string (if not)
     PARENTHESES = False
+    JSONPATH = False
+    REVERSE = False
+    CAST = None
 
     left = None    # Left expression
     right = None   # Right expression
@@ -32,8 +35,8 @@ class CRITERION(relations_sql.EXPRESSION):
         if not isinstance(left, relations_sql.SQL):
             left = self.LEFT(left, jsonify=jsonify, extracted=extracted)
 
-        if isinstance(left, relations_sql.COLUMNNAME) and left.path:
-            jsonify = True
+            if self.JSONPATH and not self.CAST and isinstance(left, relations_sql.COLUMN_NAME) and left.path:
+                left.jsonify = jsonify = True
 
         if not isinstance(right, relations_sql.SQL):
             right = self.RIGHT(right, jsonify=jsonify)
@@ -59,12 +62,21 @@ class CRITERION(relations_sql.EXPRESSION):
         line = "\n" if indent else ''
         left, right = ('', '') if isinstance(self.right, self.RIGHT) and not self.PARENTHESES else (f"({line}{next}", f"{line}{current})")
 
-        self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
-        self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+        if self.REVERSE:
+            self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+            self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
+            sql[0] = f"{left}{sql[0]}{right}"
+        else:
+            self.express(self.left, sql, indent=indent, count=count+1, **kwargs)
+            self.express(self.right, sql, indent=indent, count=count+1, **kwargs)
+            sql[1] = f"{left}{sql[1]}{right}"
 
         operand = self.INVERT if self.invert else self.OPERAND
 
-        self.sql = operand % (sql[0], f"{left}{sql[1]}{right}")
+        if self.CAST:
+            sql = [self.CAST % expression for expression in sql]
+
+        self.sql = operand % tuple(sql)
 
 
 class NULL(CRITERION):
@@ -74,6 +86,7 @@ class NULL(CRITERION):
 
     OPERAND = "%s IS NULL"
     INVERT = "%s IS NOT NULL"
+    JSONNULL = None
 
     def __len__(self):
 
@@ -85,6 +98,9 @@ class NULL(CRITERION):
         self.args = []
 
         self.express(self.left, sql, **kwargs)
+
+        if isinstance(self.left, relations_sql.COLUMN_NAME) and self.left.path and self.JSONNULL is not None:
+            sql[0] = self.JSONNULL % sql[0]
 
         OPERAND = self.INVERT if bool(self.right.value) == bool(self.invert) else self.OPERAND
 
@@ -204,7 +220,7 @@ class CONTAINS(CRITERION):
     Wether one set contains another
     """
 
-    LEFT = relations_sql.COLUMNNAME
+    LEFT = relations_sql.COLUMN_NAME
     RIGHT = relations_sql.VALUE
 
     OPERAND = "CONTAINS(%s,%s)"
@@ -215,7 +231,7 @@ class LENGTHS(CRITERION):
     Wether one set contains another
     """
 
-    LEFT = relations_sql.COLUMNNAME
+    LEFT = relations_sql.COLUMN_NAME
     RIGHT = relations_sql.VALUE
 
     OPERAND = "LENGTHS(%s,%s)"

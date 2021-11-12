@@ -13,6 +13,19 @@ class SQL:
     JSONIFY = "JSON(%s)"
     PATH = "%s#>>%s"
 
+    @staticmethod
+    def walk(path):
+
+        places = []
+
+        for place in path:
+            if isinstance(place, int):
+                places.append(f"[{int(place)}]")
+            else:
+                places.append(f'."{place}"')
+
+        return f"${''.join(places)}"
+
 
 class TestSQLError(unittest.TestCase):
 
@@ -22,7 +35,7 @@ class TestSQLError(unittest.TestCase):
 
         error = relations_sql.SQLError("unittest", "oops")
 
-        self.assertEqual(error.sql, "unittest")
+        self.assertEqual(error.sql, """unittest""")
         self.assertEqual(error.message, "oops")
 
 
@@ -34,7 +47,7 @@ class TestSQL(unittest.TestCase):
 
         sql = relations_sql.SQL("unit", "test")
 
-        self.assertEqual(sql.sql, "unit")
+        self.assertEqual(sql.sql, """unit""")
         self.assertEqual(sql.args, "test")
 
     def test___len__(self):
@@ -44,6 +57,12 @@ class TestSQL(unittest.TestCase):
 
         sql.sql = True
         self.assertEqual(len(sql), 1)
+
+    def test_split(self):
+
+        self.assertEqual(relations_sql.SQL.split("people.stuff.things"), ("people.stuff.things", []))
+
+        self.assertEqual(relations_sql.SQL.split("people_stuff__a__0___1____2_____3"), ("people_stuff", ["a", 0, -1, "2", "-3"]))
 
     def test_generate(self):
 

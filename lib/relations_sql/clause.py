@@ -18,7 +18,7 @@ class CLAUSE(relations_sql.CRITERIA):
     PARENTHESES = False
     NAME = None
 
-    statement = None
+    query = None
 
     def __init__(self, *args, **kwargs):
 
@@ -36,6 +36,10 @@ class CLAUSE(relations_sql.CRITERIA):
         Add expressiona
         """
 
+        if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
+            kwargs = args[0]
+            args = []
+
         super().add(*args)
 
         for key in sorted(kwargs.keys()):
@@ -45,14 +49,14 @@ class CLAUSE(relations_sql.CRITERIA):
                 expression = self.KWARG(kwargs[key])
             self.expressions.append(self.KWARGS(key, expression))
 
-        return self.statement or self
+        return self.query or self
 
-    def bind(self, statement):
+    def bind(self, query):
         """
         Bind this statment to this clause for adding
         """
 
-        self.statement = statement
+        self.query = query
         return self
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
@@ -86,7 +90,7 @@ class ARGS(CLAUSE):
 
 class OPTIONS(ARGS):
     """
-    Beginning of a SELECT statement
+    Beginning of a SELECT query
     """
 
     ARGS = relations_sql.SQL
@@ -96,11 +100,11 @@ class OPTIONS(ARGS):
 
 class FIELDS(CLAUSE):
     """
-    FIELDS part of SELECT statement
+    FIELDS part of SELECT query
     """
 
-    ARGS = relations_sql.COLUMNNAME
-    KWARG = relations_sql.COLUMNNAME
+    ARGS = relations_sql.COLUMN_NAME
+    KWARG = relations_sql.COLUMN_NAME
     KWARGS = relations_sql.AS
 
 
@@ -111,8 +115,8 @@ class FROM(CLAUSE):
 
     NAME = "FROM"
 
-    ARGS = relations_sql.TABLENAME
-    KWARG = relations_sql.TABLENAME
+    ARGS = relations_sql.TABLE_NAME
+    KWARG = relations_sql.TABLE_NAME
     KWARGS = relations_sql.AS
 
 
@@ -136,7 +140,7 @@ class GROUP_BY(ARGS):
 
     NAME = "GROUP BY"
 
-    ARGS = relations_sql.COLUMNNAME
+    ARGS = relations_sql.COLUMN_NAME
 
 
 class HAVING(CLAUSE):
@@ -172,21 +176,30 @@ class LIMIT(CLAUSE):
 
     ARGS = relations_sql.VALUE
 
+    DELIMITTER = " OFFSET "
+
     def add(self, *args, total=None, offset=None):
         """
         Add total and offset
         """
 
-        if len(args) > 2 - len(self.expressions):
-            raise relations_sql.SQLError(self, "cannot add when LIMIT set")
+        if len(args) == 1 and isinstance(args[0], dict) and total is None and offset is None:
 
-        args = list(args)
+            total = args[0].get("total")
+            offset = args[0].get("offset")
 
-        if args and len(self.expressions) == 0 and total is None:
-            total = args.pop(0)
+        else:
 
-        if args and offset is None:
-            offset = args.pop(0)
+            if len(args) > 2 - len(self.expressions):
+                raise relations_sql.SQLError(self, "cannot add when LIMIT set")
+
+            args = list(args)
+
+            if args and len(self.expressions) == 0 and total is None:
+                total = args.pop(0)
+
+            if args and offset is None:
+                offset = args.pop(0)
 
         if total is not None and not isinstance(total, int):
             raise relations_sql.SQLError(self, "LIMIT total must be int")
@@ -200,7 +213,14 @@ class LIMIT(CLAUSE):
         if offset is not None:
             self.expressions.append(self.ARGS(offset))
 
-        return self.statement or self
+        return self.query or self
+
+    def generate(self, indent=0, count=0, pad=" ", **kwargs):
+        """
+        Concats the values
+        """
+
+        super().generate(**kwargs)
 
 
 class SET(CLAUSE):
@@ -224,19 +244,26 @@ class VALUES(CLAUSE):
 
     DELIMITTER = None
 
-    fields = None
+    columns = None
 
-    def field(self, fields):
+    def column(self, columns):
         """
-        Field the fields
+        Field the columns
         """
 
-        if self.fields:
+        if self.columns:
             return
 
-        self.fields = fields
-        if self.statement:
-            self.statement.field(self.fields)
+        if self.query:
+
+            if not self.query.COLUMNS:
+                self.query.column(columns)
+
+            self.columns = [expresion.name for expresion in self.query.COLUMNS.expressions]
+
+        else:
+
+            self.columns = columns
 
     def add(self, *args, **kwargs):
         """
@@ -244,29 +271,33 @@ class VALUES(CLAUSE):
         """
 
         if kwargs.get("COLUMNS"):
-            self.field(kwargs.pop("COLUMNS"))
+            self.column(kwargs.pop("COLUMNS"))
 
         if args and kwargs:
             raise relations_sql.SQLError(self, "add list or dict but not both")
 
+        if len(args) == 1 and isinstance(args[0], dict):
+            kwargs = args[0]
+            args = []
+
         if kwargs:
 
-            self.field(sorted(kwargs.keys()))
+            self.column(sorted(kwargs.keys()))
 
             args = []
 
-            for field in self.fields:
-                if field not in kwargs:
-                    raise relations_sql.SQLError(self, f"missing field {field} in {kwargs}")
-                args.append(kwargs[field])
+            for column in self.columns:
+                if column not in kwargs:
+                    raise relations_sql.SQLError(self, f"missing column {column} in {kwargs}")
+                args.append(kwargs[column])
 
         if args:
-            if self.fields is not None and len(args) != len(self.fields):
-                raise relations_sql.SQLError(self, f"wrong values {args} for fields {self.fields}")
+            if self.columns is not None and len(args) != len(self.columns):
+                raise relations_sql.SQLError(self, f"wrong values {args} for columns {self.columns}")
 
             self.expressions.append(self.ARGS(args))
 
-        return self.statement or self
+        return self.query or self
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """

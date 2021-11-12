@@ -34,6 +34,18 @@ class TestDDL(unittest.TestCase):
         ddl = DDL(name="ugly")
         self.assertEqual(ddl.migration, {"name": "ugly", "store": "ugly"})
 
+    def test___len__(self):
+
+        ddl = DDL()
+
+        self.assertEqual(len(ddl), 1)
+
+    def test_str(self):
+
+        ddl = DDL()
+
+        self.assertEqual(ddl.str(1), "'1'")
+
     def test_generate(self):
 
         ddl = DDL()

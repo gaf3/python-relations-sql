@@ -10,8 +10,6 @@ class DDL(relations_sql.EXPRESSION):
     Base definiton
     """
 
-    STR = None
-
     migration = None
     definition = None
     added = None
@@ -34,6 +32,13 @@ class DDL(relations_sql.EXPRESSION):
     def __len__(self):
 
         return 1
+
+    def str(self, value):
+        """
+        Outputs string value for DDL
+        """
+
+        return f"{self.STR}{value}{self.STR}"
 
     def generate(self, **kwargs):
 

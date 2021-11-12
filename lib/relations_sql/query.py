@@ -17,14 +17,6 @@ class QUERY(relations_sql.EXPRESSION):
     CLAUSES = None
     clauses = None
 
-    MODEL = [
-        'create',
-        'count',
-        'retrieve',
-        'labels',
-        'update',
-        'delete'
-    ]
     model = None
 
     def __init__(self, **kwargs):
@@ -47,9 +39,6 @@ class QUERY(relations_sql.EXPRESSION):
 
         if name in self.CLAUSES:
             return self.clauses[name]
-
-        if name in self.MODEL and self.model is not None:
-            return getattr(self.model, name)
 
         raise AttributeError(f"'{self}' object has no attribute '{name}'")
 
@@ -85,6 +74,48 @@ class QUERY(relations_sql.EXPRESSION):
 
         self.model = model
         return self
+
+    def create(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.create(query=self, *args, **kwargs)
+
+    def count(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.count(query=self, *args, **kwargs)
+
+    def labels(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.labels(query=self, *args, **kwargs)
+
+    def retrieve(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.retrieve(query=self, *args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.update(query=self, *args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Create on the Model
+        """
+
+        self.model.delete(query=self, *args, **kwargs)
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
@@ -122,12 +153,12 @@ class SELECT(QUERY):
 
     def __init__(self, *args, **kwargs):
 
-        super().__init__(*kwargs)
-        self.FIELDS(*args)
+        super().__init__(**{key: value for key, value in kwargs.items() if key in self.CLAUSES})
+        self.FIELDS(*args, **{key: value for key, value in kwargs.items() if key not in self.CLAUSES})
 
     def __call__(self, *args, **kwargs):
         """
-        Shorthand for COLUMNS
+        Shorthand for FIELDS
         """
         return self.FIELDS(*args, **kwargs)
 
@@ -142,22 +173,30 @@ class INSERT(QUERY):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLENAME),
-        ("COLUMNS", relations_sql.COLUMNNAMES),
+        ("TABLE", relations_sql.TABLE_NAME),
+        ("COLUMNS", relations_sql.COLUMN_NAMES),
         ("VALUES", relations_sql.VALUES),
         ("SELECT", SELECT)
     ])
 
-    def __init__(self, table, *args, **kwargs): # pylint: disable=too-many-branches
+    def __init__(self, TABLE, *args, **kwargs): # pylint: disable=too-many-branches
+
+        if args:
+            kwargs["COLUMNS"] = [arg for arg in args if not isinstance(arg, dict)]
+            args = [arg for arg in args if isinstance(arg, dict)]
+
+        if args:
+            kwargs["VALUES"] = args
 
         self.check(kwargs)
 
         for clause in self.CLAUSES:
             if clause == "TABLE":
-                if isinstance(table, self.CLAUSES["TABLE"]):
-                    self.clauses[clause] = table
+                if isinstance(TABLE, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = TABLE
+                    self.clauses[clause].prefix = self.PREFIX
                 else:
-                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+                    self.clauses[clause] = self.CLAUSES[clause](TABLE, prefix=self.PREFIX)
             elif clause == "COLUMNS":
                 if "COLUMNS" in kwargs:
                     if isinstance(kwargs["COLUMNS"], self.CLAUSES["COLUMNS"]):
@@ -165,7 +204,18 @@ class INSERT(QUERY):
                     else:
                         self.clauses[clause] = self.CLAUSES[clause](kwargs["COLUMNS"])
                 else:
-                    self.clauses[clause] = self.CLAUSES[clause](args)
+                    self.clauses[clause] = self.CLAUSES[clause]([])
+            elif clause == "VALUES":
+                if "VALUES" in kwargs:
+                    if isinstance(kwargs["VALUES"], self.CLAUSES["VALUES"]):
+                        self.clauses[clause] = kwargs["VALUES"].bind(self)
+                        self.column(self.clauses[clause].columns)
+                    else:
+                        self.clauses[clause] = self.CLAUSES[clause]().bind(self)
+                        for values in kwargs["VALUES"]:
+                            self.clauses[clause](values)
+                else:
+                    self.clauses[clause] = self.CLAUSES[clause]().bind(self)
             else:
                 if clause in kwargs:
                     if isinstance(kwargs[clause], self.CLAUSES[clause]):
@@ -175,15 +225,15 @@ class INSERT(QUERY):
                 else:
                     self.clauses[clause] = self.CLAUSES[clause]().bind(self)
 
-    def field(self, fields):
+    def column(self, columns):
         """
-        Field the fields
+        Field the columns
         """
 
         if self.COLUMNS:
             return
 
-        self.COLUMNS = self.CLAUSES["COLUMNS"](fields)
+        self.COLUMNS = self.CLAUSES["COLUMNS"](columns)
 
     def generate(self, indent=0, count=0, pad=" ", **kwargs):
         """
@@ -201,16 +251,18 @@ class LIMITED(QUERY):
     Clause that has a limit
     """
 
-    def __init__(self, table, **kwargs):
+    def __init__(self, TABLE, **kwargs):
 
         self.check(kwargs)
 
         for clause in self.CLAUSES:
             if clause == "TABLE":
-                if isinstance(table, self.CLAUSES["TABLE"]):
-                    self.clauses[clause] = table
+                if isinstance(TABLE, self.CLAUSES["TABLE"]):
+                    self.clauses[clause] = TABLE
+                    if self.PREFIX:
+                        TABLE.prefix = self.PREFIX
                 else:
-                    self.clauses[clause] = self.CLAUSES[clause](table, prefix=self.PREFIX)
+                    self.clauses[clause] = self.CLAUSES[clause](TABLE, prefix=self.PREFIX)
             else:
                 if clause in kwargs:
                     if isinstance(kwargs[clause], self.CLAUSES[clause]):
@@ -241,7 +293,7 @@ class UPDATE(LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLENAME),
+        ("TABLE", relations_sql.TABLE_NAME),
         ("SET", relations_sql.SET),
         ("WHERE", relations_sql.WHERE),
         ("ORDER_BY", relations_sql.ORDER_BY),
@@ -259,7 +311,7 @@ class DELETE(LIMITED):
 
     CLAUSES = collections.OrderedDict([
         ("OPTIONS", relations_sql.OPTIONS),
-        ("TABLE", relations_sql.TABLENAME),
+        ("TABLE", relations_sql.TABLE_NAME),
         ("WHERE", relations_sql.WHERE),
         ("ORDER_BY", relations_sql.ORDER_BY),
         ("LIMIT", relations_sql.LIMIT)

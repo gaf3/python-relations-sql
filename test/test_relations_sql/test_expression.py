@@ -6,14 +6,21 @@ import test_sql
 import relations_sql
 
 class UNQUOTED(relations_sql.EXPRESSION):
-    pass
+
+    QUOTE = None
 
 class QUOTED(test_sql.SQL, relations_sql.EXPRESSION):
+
     pass
 
 class TestEXPRESSION(unittest.TestCase):
 
     maxDiff = None
+
+    def test___len__(self):
+
+        expression = VALUE("unit")
+        self.assertEqual(len(expression), 1)
 
     def test_quote(self):
 
@@ -59,27 +66,32 @@ class TestVALUE(unittest.TestCase):
         self.assertEqual(expression.value, {"a": 1})
         self.assertTrue(expression.jsonify)
 
-    def test___len__(self):
-
-        expression = VALUE("unit")
-        self.assertEqual(len(expression), 1)
-
     def test_generate(self):
+
+        expression = VALUE(None)
+        expression.generate()
+        self.assertEqual(expression.sql, """%s""")
+        self.assertEqual(expression.args, [None])
 
         expression = VALUE("unit")
         expression.generate()
-        self.assertEqual(expression.sql, "%s")
+        self.assertEqual(expression.sql, """%s""")
         self.assertEqual(expression.args, ["unit"])
 
         expression = VALUE("test", jsonify=True)
         expression.generate()
-        self.assertEqual(expression.sql, "JSON(%s)")
+        self.assertEqual(expression.sql, """JSON(%s)""")
         self.assertEqual(expression.args, ['"test"'])
 
         expression = VALUE({"a": 1})
         expression.generate()
-        self.assertEqual(expression.sql, "JSON(%s)")
+        self.assertEqual(expression.sql, """JSON(%s)""")
         self.assertEqual(expression.args, ['{"a": 1}'])
+
+        expression = VALUE({'a', 'b'})
+        expression.generate()
+        self.assertEqual(expression.sql, """JSON(%s)""")
+        self.assertEqual(expression.args, ['["a", "b"]'])
 
 
 class NOT(test_sql.SQL, relations_sql.NOT):
@@ -97,22 +109,22 @@ class TestNOT(unittest.TestCase):
         self.assertEqual(expression.expression.value, "unit")
 
         expression = NOT(relations_sql.SQL("test"))
-        self.assertEqual(expression.expression.sql, "test")
+        self.assertEqual(expression.expression.sql, """test""")
 
     def test_generate(self):
 
         expression = NOT("unit")
         expression.generate()
-        self.assertEqual(expression.sql, "NOT %s")
+        self.assertEqual(expression.sql, """NOT %s""")
         self.assertEqual(expression.args, ["unit"])
 
         expression = NOT(relations_sql.SQL("test"))
         expression.generate()
-        self.assertEqual(expression.sql, "NOT test")
+        self.assertEqual(expression.sql, """NOT test""")
         self.assertEqual(expression.args, [])
 
         expression.generate(indent=2)
-        self.assertEqual(expression.sql, "NOT test")
+        self.assertEqual(expression.sql, """NOT test""")
 
 
 class LIST(test_sql.SQL, relations_sql.LIST):
@@ -161,17 +173,17 @@ class TestLIST(unittest.TestCase):
 
         expression = LIST(["unit", "test"])
         expression.generate()
-        self.assertEqual(expression.sql, "%s,%s")
+        self.assertEqual(expression.sql, """%s,%s""")
         self.assertEqual(expression.args, ["unit", "test"])
 
         expression = LIST(["unit", "test"], jsonify=True)
         expression.generate()
-        self.assertEqual(expression.sql, "JSON(%s),JSON(%s)")
+        self.assertEqual(expression.sql, """JSON(%s),JSON(%s)""")
         self.assertEqual(expression.args, ['"unit"', '"test"'])
 
         expression = LIST([{"a": 1}, {"b": 2}])
         expression.generate()
-        self.assertEqual(expression.sql, "JSON(%s),JSON(%s)")
+        self.assertEqual(expression.sql, """JSON(%s),JSON(%s)""")
         self.assertEqual(expression.args, ['{"a": 1}', '{"b": 2}'])
 
         expression.generate(indent=2)
@@ -220,75 +232,75 @@ class TestNAME(unittest.TestCase):
 
         expression = NAME("people")
         expression.generate()
-        self.assertEqual(expression.sql, "`people`")
+        self.assertEqual(expression.sql, """`people`""")
         self.assertEqual(expression.args, [])
 
 
-class SCHEMANAME(test_sql.SQL, relations_sql.SCHEMANAME):
+class SCHEMA_NAME(test_sql.SQL, relations_sql.SCHEMA_NAME):
     pass
 
-class TestSCHEMANAME(unittest.TestCase):
+class TestSCHEMA_NAME(unittest.TestCase):
 
     maxDiff = None
 
     def test___init__(self):
 
-        expression = SCHEMANAME("people")
+        expression = SCHEMA_NAME("people")
         self.assertEqual(expression.name, "people")
 
     def test___call__(self):
 
-        expression = SCHEMANAME("")
+        expression = SCHEMA_NAME("")
         expression("people")
         self.assertEqual(expression.name, "people")
 
     def test_set(self):
 
-        expression = SCHEMANAME("")
+        expression = SCHEMA_NAME("")
         expression.set("people")
         self.assertEqual(expression.name, "people")
 
     def test_generate(self):
 
-        expression = SCHEMANAME("people")
+        expression = SCHEMA_NAME("people")
         expression.generate()
-        self.assertEqual(expression.sql, "`people`")
+        self.assertEqual(expression.sql, """`people`""")
         self.assertEqual(expression.args, [])
 
 
-class TABLENAME(test_sql.SQL, relations_sql.TABLENAME):
+class TABLE_NAME(test_sql.SQL, relations_sql.TABLE_NAME):
 
-    SCHEMANAME = SCHEMANAME
+    SCHEMA_NAME = SCHEMA_NAME
 
-class TestTABLENAME(unittest.TestCase):
+class TestTABLE_NAME(unittest.TestCase):
 
     maxDiff = None
 
     def test___init__(self):
 
-        expression = TABLENAME("stuff")
+        expression = TABLE_NAME("stuff")
         self.assertEqual(expression.name, "stuff")
         self.assertIsNone(expression.schema)
 
-        expression = TABLENAME("people.stuff", prefix="things")
+        expression = TABLE_NAME("people.stuff", prefix="things")
         self.assertEqual(expression.name, "stuff")
         self.assertEqual(expression.prefix, "things")
-        self.assertIsInstance(expression.schema, SCHEMANAME)
+        self.assertIsInstance(expression.schema, SCHEMA_NAME)
         self.assertEqual(expression.schema.name, "people")
 
-        expression = TABLENAME("stuff", "people")
+        expression = TABLE_NAME("stuff", "people")
         self.assertEqual(expression.name, "stuff")
-        self.assertIsInstance(expression.schema, SCHEMANAME)
+        self.assertIsInstance(expression.schema, SCHEMA_NAME)
         self.assertEqual(expression.schema.name, "people")
 
         schema = relations_sql.SQL()
-        expression = TABLENAME("stuff", schema=schema)
+        expression = TABLE_NAME("stuff", schema=schema)
         self.assertEqual(expression.name, "stuff")
         self.assertEqual(expression.schema, schema)
 
     def test___call__(self):
 
-        expression = TABLENAME('')
+        expression = TABLE_NAME('')
         expression("stuff")
         self.assertEqual(expression.name, "stuff")
         self.assertIsNone(expression.schema)
@@ -296,12 +308,12 @@ class TestTABLENAME(unittest.TestCase):
         expression("people.stuff", prefix="things")
         self.assertEqual(expression.name, "stuff")
         self.assertEqual(expression.prefix, "things")
-        self.assertIsInstance(expression.schema, SCHEMANAME)
+        self.assertIsInstance(expression.schema, SCHEMA_NAME)
         self.assertEqual(expression.schema.name, "people")
 
         expression("stuff", "people")
         self.assertEqual(expression.name, "stuff")
-        self.assertIsInstance(expression.schema, SCHEMANAME)
+        self.assertIsInstance(expression.schema, SCHEMA_NAME)
         self.assertEqual(expression.schema.name, "people")
 
         schema = relations_sql.SQL()
@@ -311,7 +323,7 @@ class TestTABLENAME(unittest.TestCase):
 
     def test_set(self):
 
-        expression = TABLENAME('')
+        expression = TABLE_NAME('')
         expression.set("stuff")
         self.assertEqual(expression.name, "stuff")
         self.assertIsNone(expression.schema)
@@ -319,12 +331,12 @@ class TestTABLENAME(unittest.TestCase):
         expression.set("people.stuff", prefix="things")
         self.assertEqual(expression.name, "stuff")
         self.assertEqual(expression.prefix, "things")
-        self.assertIsInstance(expression.schema, SCHEMANAME)
+        self.assertIsInstance(expression.schema, SCHEMA_NAME)
         self.assertEqual(expression.schema.name, "people")
 
         expression.set("stuff", "people")
         self.assertEqual(expression.name, "stuff")
-        self.assertIsInstance(expression.schema, SCHEMANAME)
+        self.assertIsInstance(expression.schema, SCHEMA_NAME)
         self.assertEqual(expression.schema.name, "people")
 
         schema = relations_sql.SQL()
@@ -334,18 +346,18 @@ class TestTABLENAME(unittest.TestCase):
 
     def test_generate(self):
 
-        expression = TABLENAME("people.stuff", prefix="things")
+        expression = TABLE_NAME("people.stuff", prefix="things")
         expression.generate()
-        self.assertEqual(expression.sql, "things `people`.`stuff`")
+        self.assertEqual(expression.sql, """things `people`.`stuff`""")
         self.assertEqual(expression.args, [])
 
         schema = relations_sql.SQL("unit", ["test"])
-        expression = TABLENAME("stuff", schema=schema)
+        expression = TABLE_NAME("stuff", schema=schema)
         expression.generate()
-        self.assertEqual(expression.sql, "unit.`stuff`")
+        self.assertEqual(expression.sql, """unit.`stuff`""")
         self.assertEqual(expression.args, ["test"])
 
-        expression = TABLENAME("people.stuff", prefix="PRE")
+        expression = TABLE_NAME("people.stuff", prefix="PRE")
 
         expression.generate(indent=2)
         self.assertEqual(expression.sql, """PRE
@@ -359,7 +371,7 @@ class TestTABLENAME(unittest.TestCase):
         self.assertEqual(expression.sql, """PRE
       `people`.`stuff`""")
 
-        expression = TABLENAME("people.stuff", prefix="")
+        expression = TABLE_NAME("people.stuff", prefix="")
 
         expression.generate(indent=2)
         self.assertEqual(expression.sql, """  `people`.`stuff`""")
@@ -371,42 +383,29 @@ class TestTABLENAME(unittest.TestCase):
         self.assertEqual(expression.sql, """  `people`.`stuff`""")
 
 
-class COLUMNNAME(test_sql.SQL, relations_sql.COLUMNNAME):
+class COLUMN_NAME(test_sql.SQL, relations_sql.COLUMN_NAME):
 
-    TABLENAME = TABLENAME
+    TABLE_NAME = TABLE_NAME
 
-    @staticmethod
-    def walk(path):
-
-        places = []
-
-        for place in path:
-            if isinstance(place, int):
-                places.append(f"[{int(place)}]")
-            else:
-                places.append(f'."{place}"')
-
-        return f"${''.join(places)}"
-
-class TestCOLUMN(unittest.TestCase):
+class TestCOLUMN_NAME(unittest.TestCase):
 
     maxDiff = None
 
     def test___init__(self):
 
-        expression = COLUMNNAME("people.stuff.things", jsonify=True)
+        expression = COLUMN_NAME("people.stuff.things", jsonify=True)
 
         self.assertEqual(expression.name, "things")
-        self.assertIsInstance(expression.table, TABLENAME)
+        self.assertIsInstance(expression.table, TABLE_NAME)
         self.assertEqual(expression.table.name, "stuff")
-        self.assertIsInstance(expression.table.schema, SCHEMANAME)
+        self.assertIsInstance(expression.table.schema, SCHEMA_NAME)
         self.assertEqual(expression.table.schema.name, "people")
         self.assertEqual(expression.path, [])
         self.assertTrue(expression.jsonify)
 
         table = relations_sql.SQL("test", ["unit"])
 
-        expression = COLUMNNAME("people.stuff.things__a__0___1____2_____3", table=table)
+        expression = COLUMN_NAME("people.stuff.things__a__0___1____2_____3", table=table)
         self.assertEqual(expression.name, "things")
         self.assertEqual(expression.table, table)
         self.assertEqual(expression.path, ["a", 0, -1, "2", "-3"])
@@ -414,7 +413,7 @@ class TestCOLUMN(unittest.TestCase):
 
         schema = relations_sql.SQL("unit", ["test"])
 
-        expression = COLUMNNAME("people.stuff.things__a__0___1____2_____3", schema=schema, extracted=True)
+        expression = COLUMN_NAME("people.stuff.things__a__0___1____2_____3", schema=schema, extracted=True)
         self.assertEqual(expression.name, "things__a__0___1____2_____3")
         self.assertEqual(expression.table.name, "stuff")
         self.assertEqual(expression.table.schema, schema)
@@ -423,13 +422,13 @@ class TestCOLUMN(unittest.TestCase):
 
     def test___call__(self):
 
-        expression = COLUMNNAME('a')
+        expression = COLUMN_NAME('a')
         expression("people.stuff.things", jsonify=True)
 
         self.assertEqual(expression.name, "things")
-        self.assertIsInstance(expression.table, TABLENAME)
+        self.assertIsInstance(expression.table, TABLE_NAME)
         self.assertEqual(expression.table.name, "stuff")
-        self.assertIsInstance(expression.table.schema, SCHEMANAME)
+        self.assertIsInstance(expression.table.schema, SCHEMA_NAME)
         self.assertEqual(expression.table.schema.name, "people")
         self.assertEqual(expression.path, [])
         self.assertTrue(expression.jsonify)
@@ -453,13 +452,13 @@ class TestCOLUMN(unittest.TestCase):
 
     def test_set(self):
 
-        expression = COLUMNNAME('a')
+        expression = COLUMN_NAME('a')
         expression.set("people.stuff.things", jsonify=True)
 
         self.assertEqual(expression.name, "things")
-        self.assertIsInstance(expression.table, TABLENAME)
+        self.assertIsInstance(expression.table, TABLE_NAME)
         self.assertEqual(expression.table.name, "stuff")
-        self.assertIsInstance(expression.table.schema, SCHEMANAME)
+        self.assertIsInstance(expression.table.schema, SCHEMA_NAME)
         self.assertEqual(expression.table.schema.name, "people")
         self.assertEqual(expression.path, [])
         self.assertTrue(expression.jsonify)
@@ -481,43 +480,37 @@ class TestCOLUMN(unittest.TestCase):
         self.assertEqual(expression.path, [])
         self.assertFalse(expression.jsonify)
 
-    def test_split(self):
+    def test_column(self):
 
-        self.assertEqual(COLUMNNAME.split("people.stuff.things"), ("people.stuff.things", []))
-
-        self.assertEqual(COLUMNNAME.split("people_stuff__a__0___1____2_____3"), ("people_stuff", ["a", 0, -1, "2", "-3"]))
-
-    def test_field(self):
-
-        expression = COLUMNNAME("people.stuff.things")
+        expression = COLUMN_NAME("people.stuff.things")
         expression.args = []
 
-        self.assertEqual(expression.field(), "`people`.`stuff`.`things`")
+        self.assertEqual(expression.column(), "`people`.`stuff`.`things`")
 
     def test_generate(self):
 
-        expression = COLUMNNAME("*")
+        expression = COLUMN_NAME("*")
         expression.generate()
-        self.assertEqual(expression.sql, "*")
+        self.assertEqual(expression.sql, """*""")
         self.assertEqual(expression.args, [])
 
-        expression = COLUMNNAME("people.stuff.things", jsonify=True)
+        expression = COLUMN_NAME("people.stuff.things", jsonify=True)
         expression.generate()
-        self.assertEqual(expression.sql, "JSON(`people`.`stuff`.`things`)")
+        self.assertEqual(expression.sql, """JSON(`people`.`stuff`.`things`)""")
         self.assertEqual(expression.args, [])
 
         table = relations_sql.SQL("test", ["unit"])
 
-        expression = COLUMNNAME("people.stuff.things__a__0___1____2_____3", table=table)
+        expression = COLUMN_NAME("people.stuff.things__a__0___1____2_____3", table=table)
         expression.generate()
-        self.assertEqual(expression.sql, "test.`things`#>>%s")
+        self.assertEqual(expression.sql, """test.`things`#>>%s""")
         self.assertEqual(expression.args, ["unit", '$."a"[0][-1]."2"."-3"'])
 
         schema = relations_sql.SQL("unit", ["test"])
 
-        expression = COLUMNNAME("people.stuff.things__a__0___1____2_____3", schema=schema)
+        expression = COLUMN_NAME("people.stuff.things__a__0___1____2_____3", schema=schema)
         expression.generate()
-        self.assertEqual(expression.sql, "unit.`stuff`.`things`#>>%s")
+        self.assertEqual(expression.sql, """unit.`stuff`.`things`#>>%s""")
         self.assertEqual(expression.args, ["test", '$."a"[0][-1]."2"."-3"'])
 
 
@@ -535,37 +528,39 @@ class TestNAMES(unittest.TestCase):
         self.assertIsInstance(expression.expressions[0], NAME)
         self.assertEqual(expression.expressions[0].name, "unit")
         self.assertIsInstance(expression.expressions[1], relations_sql.SQL)
-        self.assertEqual(expression.expressions[1].sql, "test")
+        self.assertEqual(expression.expressions[1].sql, """test""")
 
     def test_generate(self):
 
         expression = NAMES(["unit", relations_sql.SQL("test")])
         expression.generate()
-        self.assertEqual(expression.sql, "`unit`,test")
+        self.assertEqual(expression.sql, """`unit`,test""")
         self.assertEqual(expression.args, [])
 
 
-class COLUMNNAMES(test_sql.SQL, relations_sql.COLUMNNAMES):
+class COLUMN_NAMES(test_sql.SQL, relations_sql.COLUMN_NAMES):
 
-    ARG = NAME
+    ARG = COLUMN_NAME
 
-class TestCOLUMNS(unittest.TestCase):
+class TestCOLUMN_NAMES(unittest.TestCase):
 
     maxDiff = None
 
     def test___init__(self):
 
-        expression = COLUMNNAMES(["unit", relations_sql.SQL("test")])
-        self.assertIsInstance(expression.expressions[0], NAME)
+        expression = COLUMN_NAMES(["unit", "unit__test", relations_sql.SQL("test")])
+        self.assertIsInstance(expression.expressions[0], COLUMN_NAME)
         self.assertEqual(expression.expressions[0].name, "unit")
-        self.assertIsInstance(expression.expressions[1], relations_sql.SQL)
-        self.assertEqual(expression.expressions[1].sql, "test")
+        self.assertIsInstance(expression.expressions[1], COLUMN_NAME)
+        self.assertEqual(expression.expressions[1].name, "unit__test")
+        self.assertIsInstance(expression.expressions[2], relations_sql.SQL)
+        self.assertEqual(expression.expressions[2].sql, """test""")
 
     def test_generate(self):
 
-        expression = COLUMNNAMES(["unit", relations_sql.SQL("test")])
+        expression = COLUMN_NAMES(["unit", relations_sql.SQL("test")])
         expression.generate()
-        self.assertEqual(expression.sql, "(`unit`,test)")
+        self.assertEqual(expression.sql, """(`unit`,test)""")
         self.assertEqual(expression.args, [])
 
         expression.generate(indent=2)
@@ -597,40 +592,40 @@ class TestAS(unittest.TestCase):
 
     def test___init__(self):
 
-        field = relations_sql.SQL("test", ["unit"])
+        column = relations_sql.SQL("test", ["unit"])
 
-        expression = AS("people", field)
+        expression = AS("people", column)
         self.assertIsInstance(expression.label, NAME)
         self.assertEqual(expression.label.name, "people")
-        self.assertEqual(expression.expression, field)
+        self.assertEqual(expression.expression, column)
 
         label = relations_sql.SQL("unit", ["test"])
 
-        expression = AS(label, field)
+        expression = AS(label, column)
         self.assertEqual(expression.label, label)
-        self.assertEqual(expression.expression, field)
+        self.assertEqual(expression.expression, column)
 
     def test___len__(self):
 
-        field = relations_sql.SQL("test", ["unit"])
+        column = relations_sql.SQL("test", ["unit"])
 
-        expression = AS("people", field)
+        expression = AS("people", column)
         self.assertEqual(len(expression), 2)
 
     def test_generate(self):
 
-        field = relations_sql.SQL("test", ["unit"])
+        column = relations_sql.SQL("test", ["unit"])
 
-        expression = AS("people", field)
+        expression = AS("people", column)
         expression.generate()
-        self.assertEqual(expression.sql, "test AS `people`")
+        self.assertEqual(expression.sql, """test AS `people`""")
         self.assertEqual(expression.args, ["unit"])
 
         label = relations_sql.SQL("unit", ["test"])
 
-        expression = AS(label, field)
+        expression = AS(label, column)
         expression.generate()
-        self.assertEqual(expression.sql, "test AS unit")
+        self.assertEqual(expression.sql, """test AS unit""")
         self.assertEqual(expression.args, ["unit", "test"])
 
         expression.generate(indent=2)
@@ -642,7 +637,7 @@ DESC = relations_sql.DESC
 
 class ORDER(test_sql.SQL, relations_sql.ORDER):
 
-    EXPRESSION = COLUMNNAME
+    EXPRESSION = COLUMN_NAME
 
 class TestORDER(unittest.TestCase):
 
@@ -651,24 +646,24 @@ class TestORDER(unittest.TestCase):
     def test___init__(self):
 
         expression = ORDER("people")
-        self.assertIsInstance(expression.expression, COLUMNNAME)
+        self.assertIsInstance(expression.expression, COLUMN_NAME)
         self.assertEqual(expression.expression.name, "people")
         self.assertIsNone(expression.order)
 
         expression = ORDER("people", ASC)
-        self.assertIsInstance(expression.expression, COLUMNNAME)
+        self.assertIsInstance(expression.expression, COLUMN_NAME)
         self.assertEqual(expression.expression.name, "people")
         self.assertEqual(expression.order, ASC)
 
         expression = ORDER(people=DESC)
-        self.assertIsInstance(expression.expression, COLUMNNAME)
+        self.assertIsInstance(expression.expression, COLUMN_NAME)
         self.assertEqual(expression.expression.name, "people")
         self.assertEqual(expression.order, DESC)
 
-        field = relations_sql.SQL("test", ["unit"])
+        column = relations_sql.SQL("test", ["unit"])
 
-        expression = ORDER(field)
-        self.assertEqual(expression.expression, field)
+        expression = ORDER(column)
+        self.assertEqual(expression.expression, column)
         self.assertIsNone(expression.order)
 
         self.assertRaisesRegex(relations_sql.SQLError, "need single pair", ORDER, a=1, b=2)
@@ -683,35 +678,35 @@ class TestORDER(unittest.TestCase):
 
         expression = ORDER("people")
         expression.generate()
-        self.assertEqual(expression.sql, "`people`")
+        self.assertEqual(expression.sql, """`people`""")
         self.assertEqual(expression.args, [])
 
         expression = ORDER("people", ASC)
         expression.generate()
-        self.assertEqual(expression.sql, "`people` ASC")
+        self.assertEqual(expression.sql, """`people` ASC""")
         self.assertEqual(expression.args, [])
 
         expression = ORDER(people=DESC)
         expression.generate()
-        self.assertEqual(expression.sql, "`people` DESC")
+        self.assertEqual(expression.sql, """`people` DESC""")
         self.assertEqual(expression.args, [])
 
-        field = relations_sql.SQL("test", ["unit"])
+        column = relations_sql.SQL("test", ["unit"])
 
-        expression = ORDER(field)
+        expression = ORDER(column)
         expression.generate()
-        self.assertEqual(expression.sql, "test")
+        self.assertEqual(expression.sql, """test""")
         self.assertEqual(expression.args, ["unit"])
 
-        field = relations_sql.SQL("", [])
+        column = relations_sql.SQL("", [])
 
-        expression = ORDER(field)
+        expression = ORDER(column)
         self.assertFalse(expression.generate())
 
 
 class ASSIGN(test_sql.SQL, relations_sql.ASSIGN):
 
-    COLUMNNAME = NAME
+    COLUMN_NAME = NAME
     EXPRESSION = VALUE
 
 class TestASSIGN(unittest.TestCase):
@@ -721,16 +716,16 @@ class TestASSIGN(unittest.TestCase):
     def test___init__(self):
 
         expression = ASSIGN("people", "stuff")
-        self.assertIsInstance(expression.field, NAME)
+        self.assertIsInstance(expression.column, NAME)
         self.assertIsInstance(expression.expression, VALUE)
-        self.assertEqual(expression.field.name, "people")
+        self.assertEqual(expression.column.name, "people")
         self.assertEqual(expression.expression.value, "stuff")
 
-        field = relations_sql.SQL("unit", ["test"])
+        column = relations_sql.SQL("unit", ["test"])
         value = relations_sql.SQL("test", ["unit"])
 
-        expression = ASSIGN(field, value)
-        self.assertEqual(expression.field, field)
+        expression = ASSIGN(column, value)
+        self.assertEqual(expression.column, column)
         self.assertEqual(expression.expression, value)
 
     def test___len__(self):
@@ -742,15 +737,15 @@ class TestASSIGN(unittest.TestCase):
 
         expression = ASSIGN("people", "stuff")
         expression.generate()
-        self.assertEqual(expression.sql, "`people`=%s")
+        self.assertEqual(expression.sql, """`people`=%s""")
         self.assertEqual(expression.args, ["stuff"])
 
-        field = relations_sql.SQL("unit", ["test"])
+        column = relations_sql.SQL("unit", ["test"])
         value = relations_sql.SQL("test", ["unit"])
 
-        expression = ASSIGN(field, value)
+        expression = ASSIGN(column, value)
         expression.generate()
-        self.assertEqual(expression.sql, "unit=test")
+        self.assertEqual(expression.sql, """unit=test""")
         self.assertEqual(expression.args, ["test", "unit"])
 
         expression.generate(indent=2)

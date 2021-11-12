@@ -15,10 +15,11 @@ class COLUMN(relations_sql.DDL):
 
     KINDS = {}
 
-    COLUMNNAME = None
+    COLUMN_NAME = None
 
     STORE = None
     KIND = None
+    AUTO = None
     EXTRACT = None
     SET_DEFAULT = None
     UNSET_DEFAULT = None
@@ -34,6 +35,16 @@ class COLUMN(relations_sql.DDL):
 
         return self.quote(state['store'])
 
+    def extract(self, kind, sql, **kwargs):
+        """
+        Get extract DDL
+        """
+
+        sql.append(self.KINDS.get(kind, self.KINDS["json"]))
+
+        name, path = self.split(self.migration["store"])
+        sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.str(self.walk(path)))))
+
     def create(self, **kwargs):
         """
         CREATE DLL
@@ -41,17 +52,22 @@ class COLUMN(relations_sql.DDL):
 
         sql = [self.name()]
 
-        sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
-
         if "__" in self.migration["store"]:
 
-            name, path = self.COLUMNNAME.split(self.migration["store"])
-            sql.append(self.EXTRACT % (self.PATH % (self.quote(name), self.COLUMNNAME.walk(path))))
+            self.extract(self.migration['kind'], sql, **kwargs)
 
         else:
 
-            if not self.migration.get('none'):
-                sql.append("NOT NULL")
+            if self.migration.get('auto'):
+
+                sql.append(self.AUTO)
+
+            else:
+
+                sql.append(self.KINDS.get(self.migration['kind'], self.KINDS["json"]))
+
+                if not self.migration.get('none'):
+                    sql.append("NOT NULL")
 
             if self.migration.get('default') is not None:
                 if isinstance(self.migration.get('default'), (bool, int, float, str)):
@@ -89,7 +105,10 @@ class COLUMN(relations_sql.DDL):
         Modifies the default
         """
         if self.migration.get("default") is not None:
-            default = self.migration["default"]
+            if isinstance(self.migration.get('default'), (bool, int, float, str)):
+                default = self.migration.get('default')
+            else:
+                default = json.dumps(self.migration.get('default'))
             quote = self.STR if isinstance(default, str) else ''
             sql.append(self.SET_DEFAULT % (self.name(), f"{quote}{default}{quote}"))
         else:
