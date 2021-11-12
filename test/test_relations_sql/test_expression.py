@@ -17,6 +17,11 @@ class TestEXPRESSION(unittest.TestCase):
 
     maxDiff = None
 
+    def test___len__(self):
+
+        expression = VALUE("unit")
+        self.assertEqual(len(expression), 1)
+
     def test_quote(self):
 
         expression = UNQUOTED()
@@ -60,11 +65,6 @@ class TestVALUE(unittest.TestCase):
         expression = VALUE({"a": 1})
         self.assertEqual(expression.value, {"a": 1})
         self.assertTrue(expression.jsonify)
-
-    def test___len__(self):
-
-        expression = VALUE("unit")
-        self.assertEqual(len(expression), 1)
 
     def test_generate(self):
 

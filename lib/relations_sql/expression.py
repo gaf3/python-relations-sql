@@ -13,6 +13,10 @@ class EXPRESSION(relations_sql.SQL):
     Base class for expressions
     """
 
+    def __len__(self):
+
+        return 1
+
     def quote(self, value):
         """
         Quote name if we hae quotes
@@ -49,10 +53,6 @@ class VALUE(EXPRESSION):
 
         self.value = value
         self.jsonify = jsonify or (value is not None and not isinstance(value, (bool, int, float, str)))
-
-    def __len__(self):
-
-        return 1
 
     def generate(self, **kwargs):
 
