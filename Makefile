@@ -1,7 +1,7 @@
 ACCOUNT=gaf3
-IMAGE=relations-sql
+IMAGE=python-relations-sql
 INSTALL=python:3.8.5-alpine3.12
-VERSION?=0.6.1
+VERSION?=0.6.2
 DEBUG_PORT=5678
 TTY=$(shell if tty -s; then echo "-it"; fi)
 VOLUMES=-v ${PWD}/lib:/opt/service/lib \
@@ -31,7 +31,7 @@ lint:
 
 setup:
 	docker run $(TTY) $(VOLUMES) $(INSTALL) sh -c "cp -r /opt/service /opt/install && cd /opt/install/ && \
-	apk update && apk add git && pip install git+https://github.com/gaf3/python-relations.git@0.6.5#egg=relations && \
+	apk update && apk add git && pip install git+https://github.com/relations-dil/python-relations.git@0.6.6#egg=python-relations && \
 	python setup.py install && \
 	python -m relations_sql.sql && \
 	python -m relations_sql.expression && \
