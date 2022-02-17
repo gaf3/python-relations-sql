@@ -3,7 +3,7 @@
 from setuptools import setup
 setup(
     name="python-relations-sql",
-    version="0.6.2",
+    version="0.6.3",
     package_dir = {'': 'lib'},
     py_modules = [
         'relations_sql',
