@@ -89,12 +89,12 @@ class QUERY(relations_sql.EXPRESSION):
 
         self.model.count(query=self, *args, **kwargs)
 
-    def labels(self, *args, **kwargs):
+    def titles(self, *args, **kwargs):
         """
         Create on the Model
         """
 
-        self.model.labels(query=self, *args, **kwargs)
+        self.model.titles(query=self, *args, **kwargs)
 
     def retrieve(self, *args, **kwargs):
         """

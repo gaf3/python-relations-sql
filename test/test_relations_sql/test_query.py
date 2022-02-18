@@ -88,13 +88,13 @@ class TestQUERY(unittest.TestCase):
       query.count(True, a=1)
       model.count.assert_called_once_with(True, a=1, query=query)
 
-    def test_labels(self):
+    def test_titles(self):
 
       model = unittest.mock.MagicMock()
       query = QUERY(SELECT="people.stuff", FROM="things").bind(model)
 
-      query.labels(True, a=1)
-      model.labels.assert_called_once_with(True, a=1, query=query)
+      query.titles(True, a=1)
+      model.titles.assert_called_once_with(True, a=1, query=query)
 
     def test_retrieve(self):
 
