@@ -32,7 +32,8 @@ lint:
 setup:
 	docker run $(TTY) $(VOLUMES) $(INSTALL) sh -c "cp -r /opt/service /opt/install && cd /opt/install/ && \
 	apk update && apk add git && \
-	pip install git+https://github.com/relations-dil/python-relations.git@0.6.8#egg=python-relations && \
+	pip install \
+		git+https://github.com/relations-dil/python-relations.git@2a4fa0c#egg=python-relations && \
 	python setup.py install && \
 	python -m relations_sql.sql && \
 	python -m relations_sql.expression && \

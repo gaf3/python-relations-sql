@@ -1,4 +1,4 @@
-git+https://github.com/relations-dil/python-relations.git@0.6.8#egg=python-relations
+git+https://github.com/relations-dil/python-relations.git@2a4fa0c#egg=python-relations
 ptvsd==4.3.2
 coverage==5.2.1
 pylint==2.5.3
