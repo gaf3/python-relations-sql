@@ -34,8 +34,21 @@ class TABLE(relations_sql.DDL):
                 "schema": state
             }
 
-        store = (self.definition if state["name"] == "definition" or "store" not in self.migration else self.migration)["store"]
-        schema = (self.definition if state["schema"] == "definition" else self.migration).get("schema")
+        definition_store = (self.definition or {}).get("store")
+        definition_schema = (self.definition or {}).get("schema")
+
+        migration_store = (self.migration or {}).get("store")
+        migration_schema = (self.migration or {}).get("schema")
+
+        if state["name"] == "migration":
+            store = migration_store or definition_store
+        else:
+            store = definition_store or migration_store
+
+        if state["schema"] == "migration":
+            schema = migration_schema or definition_schema
+        else:
+            schema = definition_schema or migration_schema
 
         table = self.NAME(store, schema=schema)
 
