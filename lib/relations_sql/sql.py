@@ -2,7 +2,7 @@
 Base SQL module for all of Relations
 """
 
-import relations
+import overscore
 
 class SQLError(Exception):
     """
@@ -38,7 +38,7 @@ class SQL:
         Splits column value into name and path
         """
 
-        path = relations.Field.split(column)
+        path = overscore.parse(column)
 
         name = path.pop(0)
 
