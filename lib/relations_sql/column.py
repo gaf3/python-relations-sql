@@ -52,7 +52,7 @@ class COLUMN(relations_sql.DDL):
 
         sql = [self.name()]
 
-        if self.migration["store"] and "__" in self.migration["store"]:
+        if "__" in self.migration["store"]:
 
             self.extract(self.migration['kind'], sql, **kwargs)
 
